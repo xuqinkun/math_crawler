@@ -1,10 +1,9 @@
-from selenium import webdriver
-import mongo_client
 import time
-from threading import Thread
+import mongo_client
 
-COLLECTION = 'question_url'
-BATCH_SIZE = 1000
+from threading import Thread
+from selenium import webdriver
+from constant import *
 
 
 def next_page(driver):
@@ -46,10 +45,13 @@ def travers_pages(driver, thread_name='', _class=''):
 
 
 def insert_many(questions):
-    if not mongo_client.insert_many(COLLECTION, questions):
-        print('Batch insertion failed, try insert one by one!')
+    if not mongo_client.insert_many(COLLECTION_URL, questions):
+        print('==========Batch insertion failed, try insert one by one!==========')
+        count = 0
         for item in questions:
-            mongo_client.insert_one(COLLECTION, item)
+            if mongo_client.insert_one(COLLECTION_URL, item):
+                count += 1
+        print('==========Inserted %d items total one by one!==========' % count)
 
 
 # Index page of math questions
@@ -105,14 +107,4 @@ def dispatch_task(url=''):
 
 
 index_url = 'http://zujuan.51jiaoxi.com/#/paperFrontend/manual?stage_id=2&subject_id=3'
-# fetch_question_list(index_url)
 dispatch_task(index_url)
-# driver = webdriver.Chrome()
-# driver.get("http://zujuan.51jiaoxi.com/#/paperFrontend/manual?stage_id=2&subject_id=3")
-# time.sleep(0.5)
-# driver.maximize_window()
-# # driver.find_elements_by_class_name("li-slot")[0].click()
-# time.sleep(0.5)
-#
-# time.sleep(3)
-# driver.quit()
