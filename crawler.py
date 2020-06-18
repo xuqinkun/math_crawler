@@ -4,7 +4,7 @@ from bs4.element import *
 import mongo_client
 from constant import *
 from math_resolve import *
-
+from selenium import webdriver
 
 # Convert the img src to MathML
 def resolve_mathml(src=''):
@@ -92,5 +92,20 @@ def resolve_single():
                     print("Login failure!Please refresh cookies!")
                     break
 
+def get_cookies():
+    '''
+        get cookies after logining in 51jiaoxi and return cookies as a string.
+        you should login in this site mannually so this function will wait for pressing a key after you login in this site.
+        WARNING: you should download chromedriver and move this application to the current floder. If you don't have this application, you can access https://chromedriver.chromium.org/, check your chrome version and download corresponding version's chromedriver.
+    '''
+    with webdriver.Chrome(executable_path=r'./chromedriver') as driver:
+        driver.get(r'http://www.51jiaoxi.com/')
+        #waiting for logining in this site and press any key to contiune
+        input()
+        cookies=driver.get_cookies()
+        cookies_str=''
+        for cookie in cookies:
+            cookies_str+=str(cookie['name'])+'='+str(cookie['value'])+';'
+        return cookies_str
 
 resolve_single()
