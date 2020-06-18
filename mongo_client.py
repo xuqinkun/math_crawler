@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 from pymongo.errors import *
 
-client = MongoClient('localhost', 27017)
+client = MongoClient('121.48.165.7', 11118)
 db = client['math_questions']
 
 
