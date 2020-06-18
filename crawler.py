@@ -1,10 +1,12 @@
 import requests
+import time
 from bs4.element import *
 
 import mongo_client
-from constant import *
+from config import *
 from math_resolve import *
 from selenium import webdriver
+
 
 # Convert the img src to MathML
 def resolve_mathml(src=''):
@@ -92,20 +94,45 @@ def resolve_single():
                     print("Login failure!Please refresh cookies!")
                     break
 
-def get_cookies():
-    '''
+
+def get_cookies(login_with_wechat=False):
+    """
         get cookies after logining in 51jiaoxi and return cookies as a string.
         you should login in this site mannually so this function will wait for pressing a key after you login in this site.
-        WARNING: you should download chromedriver and move this application to the current floder. If you don't have this application, you can access https://chromedriver.chromium.org/, check your chrome version and download corresponding version's chromedriver.
-    '''
-    with webdriver.Chrome(executable_path=r'./chromedriver') as driver:
-        driver.get(r'http://www.51jiaoxi.com/')
-        #waiting for logining in this site and press any key to contiune
-        input()
-        cookies=driver.get_cookies()
-        cookies_str=''
+        WARNING: you should download chromedriver and move this application to the current floder.
+        If you don't have this application, you can access https://chromedriver.chromium.org/,
+        check your chrome version and download corresponding version's chromedriver.
+    """
+    # with webdriver.Chrome(executable_path=r'./chromedriver') as driver:
+    with webdriver.Chrome() as driver:
+        driver.get(login_url)
+        # waiting for logining in this site and press any key to continue
+        if login_with_wechat:
+            print("Please scan  two-dimension code to login! And press any key to continue!")
+            input()
+        else:
+            driver.find_element_by_css_selector("div[class='phone login-way wechat-leave']").click()
+            driver.find_element_by_id('login-auth-phone').send_keys(phone_number)
+            driver.find_element_by_id('login-auth-password').send_keys(password)
+            driver.find_element_by_css_selector('div[class="submit"]').click()
+            time.sleep(0.5)
+            error_msg = driver.find_element_by_css_selector("span[class='alert-message error']").text
+            if error_msg != "":
+                print(error_msg)
+                exit(1)
+        cookies = driver.get_cookies()
+        cookies_str = ''
         for cookie in cookies:
-            cookies_str+=str(cookie['name'])+'='+str(cookie['value'])+';'
+            cookies_str += str(cookie['name']) + '=' + str(cookie['value']) + ';'
         return cookies_str
 
-resolve_single()
+
+# Update cookie
+def login(login_with_wechat=False):
+    cookies = get_cookies(login_with_wechat)
+    HEADERS[COOKIE] = cookies
+
+
+if __name__ == '__main__':
+    login(False)
+    resolve_single()
