@@ -1,7 +1,6 @@
 import requests
 import time
 from bs4.element import *
-
 import mongo_client
 from config import *
 from math_resolve import *
@@ -75,7 +74,7 @@ def resolve_options(tag=Tag(name='')):
 def resolve_single():
     last = 0
     while True:
-        data = mongo_client.load_unresolved_url(COLLECTION_URL, BATCH_SIZE, last, {"type": "单选题"})
+        data = mongo_client.load_unresolved_url(BATCH_SIZE, last, {"type": "单选题"})
         if len(data) == 0:
             break
         last += BATCH_SIZE
@@ -95,6 +94,18 @@ def resolve_single():
                     break
 
 
+# Return False when get empty cookies or contains expired cookie
+def is_valid_cookies(cookies=[]):
+    if len(cookies) == 0:
+        return False
+    for cookie in cookies:
+        if cookie['name'] == '_gat_gtag_UA_137517687_1':
+            continue
+        if 'expiry' in cookie.keys() and cookie['expiry'] < time.time():
+            return False
+    return True
+
+
 def get_cookies(login_with_wechat=False):
     """
         get cookies after logining in 51jiaoxi and return cookies as a string.
@@ -103,12 +114,15 @@ def get_cookies(login_with_wechat=False):
         If you don't have this application, you can access https://chromedriver.chromium.org/,
         check your chrome version and download corresponding version's chromedriver.
     """
+    cookies = mongo_client.load_cookies()
+    if is_valid_cookies(cookies):
+        return cookies
     # with webdriver.Chrome(executable_path=r'./chromedriver') as driver:
     with webdriver.Chrome() as driver:
         driver.get(login_url)
         # waiting for logining in this site and press any key to continue
         if login_with_wechat:
-            print("Please scan  two-dimension code to login! And press any key to continue!")
+            print("Please scan two-dimension code to login! And press any key to continue!")
             input()
         else:
             driver.find_element_by_css_selector("div[class='phone login-way wechat-leave']").click()
@@ -121,18 +135,18 @@ def get_cookies(login_with_wechat=False):
                 print(error_msg)
                 exit(1)
         cookies = driver.get_cookies()
-        cookies_str = ''
-        for cookie in cookies:
-            cookies_str += str(cookie['name']) + '=' + str(cookie['value']) + ';'
-        return cookies_str
+        mongo_client.insert_or_update_cookies(cookies)
+        return cookies
 
 
-# Update cookie
-def login(login_with_wechat=False):
+def refresh_cookies(login_with_wechat=False):
     cookies = get_cookies(login_with_wechat)
-    HEADERS[COOKIE] = cookies
+    cookies_str = ''
+    for cookie in cookies:
+        cookies_str += str(cookie['name']) + '=' + str(cookie['value']) + ';'
+    HEADERS[COOKIE] = cookies_str
 
 
 if __name__ == '__main__':
-    login(False)
+    refresh_cookies(True)
     resolve_single()

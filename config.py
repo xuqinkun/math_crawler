@@ -8,6 +8,8 @@ MATH_ML = 'mathml'
 phone_number = 'xxxxx'
 password = 'xxxxx'
 login_url = 'http://www.51jiaoxi.com/login'
+MONGO_HOST = 'ip'
+MONGO_PORT = 0
 
 HEADERS = {
     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
