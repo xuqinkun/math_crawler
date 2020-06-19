@@ -3,7 +3,7 @@ import mongo_client
 
 from threading import Thread
 from selenium import webdriver
-from constant import *
+from config import *
 
 
 def next_page(driver):
@@ -106,5 +106,6 @@ def dispatch_task(url=''):
         Thread(target=fetch_question_list, args=(url, index)).start()
 
 
-index_url = 'http://zujuan.51jiaoxi.com/#/paperFrontend/manual?stage_id=2&subject_id=3'
-dispatch_task(index_url)
+if __name__ == '__main__':
+    index_url = 'http://zujuan.51jiaoxi.com/#/paperFrontend/manual?stage_id=2&subject_id=3'
+    dispatch_task(index_url)

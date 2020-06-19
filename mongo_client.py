@@ -1,15 +1,16 @@
 from pymongo import MongoClient
 from pymongo.errors import *
 
-client = MongoClient('121.48.165.7', 11118)
-db = client['math_questions']
+from config import *
 
 
 def insert_one(collection_name='', doc={}):
     try:
-        collection = db[collection_name]
-        collection.insert_one(doc)
-        return True
+        with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+            db = client['math_questions']
+            collection = db[collection_name]
+            collection.insert_one(doc)
+            return True
     except DuplicateKeyError as e:
         # print(e.details)
         return False
@@ -17,23 +18,47 @@ def insert_one(collection_name='', doc={}):
 
 def insert_many(collection_name='', docs=[]):
     try:
-        collection = db[collection_name]
-        collection.insert_many(docs)
-        return True
+        with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+            db = client['math_questions']
+            collection = db[collection_name]
+            collection.insert_many(docs)
+            return True
     except BulkWriteError as e:
         # print(e.details)
         return False
 
 
 # Load $num urls from the start item
-def load_unresolved_url(collection_name='', num=0, start=0, filter={}):
-    collection = db[collection_name]
-    filter["resolved"] = False
-    docs = collection.find(filter, {"url": 1, "type": 1, 'resolved': 1}).skip(start).limit(num)
-    data = []
-    for doc in docs:
-        data.append(doc)
-    return data
+def load_unresolved_url(num=0, start=0, filter={}):
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client['math_questions']
+        collection = db[COLLECTION_URL]
+        filter["resolved"] = False
+        docs = collection.find(filter, {"url": 1, "type": 1, 'resolved': 1}).skip(start).limit(num)
+        data = []
+        for doc in docs:
+            data.append(doc)
+        return data
+
+
+def insert_or_update_cookies(cookies=[]):
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client['math_questions']
+        collection = db['cookie']
+        for cookie in cookies:
+            filter = {'name': cookie['name']}
+            collection.update(spec=filter, document=cookie, upsert=True)
+
+
+def load_cookies():
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client['math_questions']
+        collection = db['cookie']
+        docs = collection.find({})
+        cookies = []
+        for doc in docs:
+            cookies.append(doc)
+        return cookies
 
 #load img urls
 # def load_unresolved_imgs(collection_name='', num=0, start=0, filter={}):
