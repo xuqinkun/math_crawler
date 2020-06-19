@@ -60,20 +60,3 @@ def load_cookies():
             cookies.append(doc)
         return cookies
 
-#load img urls
-# def load_unresolved_imgs(collection_name='', num=0, start=0, filter={}):
-#     collection = db[collection_name]
-#     filter["resolved"] = False
-#     imgs = collection.find(filter).skip(start).limit(num)
-#     data = []
-#     for img in imgs:
-#         data.append(img)
-#     return data
-
-#update data
-# def update_datas(collection_name='', num=0, start=0, filter = {}, string = ""):
-#     collection = db[collection_name]
-#     collection.update(filter,{"$set":{PLAIN_TEXT: string}})
-
-# data = load_unresolved_imgs("img_url", 10, 0)
-# print(data)

@@ -18,3 +18,13 @@ HEADERS = {
     COOKIE: "_session=;XSRF-TOKEN=",
     "X-Requested-With": "XMLHttpRequest"
 }
+
+# ------------------------------------OCR parameters-------------------------------------------
+# COLLECTION_IMG = ""
+#tencent
+Tencent_API_KEY = "your_api_key"
+Tencent_SECRET_KEY = "your_secret_key"
+#baidu
+Baidu_APP_ID = "your_app_id"
+Baidu_API_KEY = "your_api_key"
+Baidu_SECRET_KEY = "your_secret_key"

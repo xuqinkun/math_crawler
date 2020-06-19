@@ -68,11 +68,6 @@ def baidu_image2str(image_path, types = "characters", src = "url"):
         pass
     return ret
 
-# print(baidu_image2str("./test.png","characters","local"))
-# imgs = load_unresolved_imgs("img_url", 10, 0)
-# for img in imgs:
-#     string = tencent_image2str(img)
-#     update_datas(COLLECTION_IMG,0,10,img,string)
 print(baidu_image2str("./test.png","characters","local"))
 print(baidu_image2str("http://img.51jiaoxi.com/answer-images/9082d2c8-f08e-4588-9049-aab48f29fb24.png","characters","url"))
 print(tencent_image2str("http://img.51jiaoxi.com/answer-images/9082d2c8-f08e-4588-9049-aab48f29fb24.png","questions","url"))
