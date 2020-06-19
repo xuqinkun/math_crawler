@@ -19,7 +19,7 @@ def get_uuid(src=''):
 
 
 # Resolve the tag as a plain text
-# HTML Tag is a tree, use DFS to travers
+# HTML Tag is a tree, use DFS to traverse
 def resolve_title(tag=Tag(name='')):
     plain_text = []
     url_map = []
@@ -91,6 +91,5 @@ def resolve_single():
                 if analyze.text == '显示答案解析':
                     print("Login failure!Please refresh cookies!")
                     break
-
 
 resolve_single()
