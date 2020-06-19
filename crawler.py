@@ -5,7 +5,7 @@ import mongo_client
 from config import *
 from math_resolve import *
 from selenium import webdriver
-
+import selenium.webdriver.common.action_chains as ac
 
 # Convert the img src to MathML
 def resolve_mathml(src=''):
@@ -106,37 +106,48 @@ def is_valid_cookies(cookies=[]):
     return True
 
 
-def get_cookies(login_with_wechat=False):
+def get_cookies(GUI=False,params={}):
     """
-        get cookies after logining in 51jiaoxi and return cookies as a string.
-        you should login in this site mannually so this function will wait for pressing a key after you login in this site.
-        WARNING: you should download chromedriver and move this application to the current floder.
-        If you don't have this application, you can access https://chromedriver.chromium.org/,
-        check your chrome version and download corresponding version's chromedriver.
+        Get cookies after logining in 51jiaoxi and return cookies as dict list.
+        GUI: If false, you should provide phone and password to login automatically.
+             If true, you will login manually to continue.
+        params: A dict, if GUI is false, params['phone'] and params['password'] should exists.
+        WARNING: You should download chromedriver and move this application to the current floder.
+                 If you don't have this application, you can access https://chromedriver.chromium.org/,
+                 check your chrome version and download corresponding version's chromedriver.
+        WARNING: You should download phantomjs and move this application to the current floder.
+                 If you don't have this application. you can access https://phantomjs.org/download.html,
+                 check your system and download corresponding version's phantomjs.
     """
     cookies = mongo_client.load_cookies()
     if is_valid_cookies(cookies):
         return cookies
-    # with webdriver.Chrome(executable_path=r'./chromedriver') as driver:
-    with webdriver.Chrome() as driver:
+
+    login_url=r'http://www.51jiaoxi.com/login'
+    if GUI==False:
+        driver=webdriver.PhantomJS()
         driver.get(login_url)
-        # waiting for logining in this site and press any key to continue
-        if login_with_wechat:
-            print("Please scan two-dimension code to login! And press any key to continue!")
-            input()
-        else:
-            driver.find_element_by_css_selector("div[class='phone login-way wechat-leave']").click()
-            driver.find_element_by_id('login-auth-phone').send_keys(phone_number)
-            driver.find_element_by_id('login-auth-password').send_keys(password)
-            driver.find_element_by_css_selector('div[class="submit"]').click()
-            time.sleep(0.5)
-            error_msg = driver.find_element_by_css_selector("span[class='alert-message error']").text
-            if error_msg != "":
-                print(error_msg)
-                exit(1)
-        cookies = driver.get_cookies()
-        mongo_client.insert_or_update_cookies(cookies)
-        return cookies
+        time.sleep(3)
+        ac.actionChains(driver).click(driver.find_element_by_css_selector('div.phone.login-way.wechat-leave')).perform()
+        time.sleep(3)
+        ac.ActionChains(driver).send_keys_to_element(driver.find_element_by_id('login-auth-phone'),params['phone']).perform()
+        time.sleep(1)
+        ac.ActionChains(driver).send_keys_to_element(driver.find_element_by_id('login-auth-password'),params['password']).perform()
+        time.sleep(1)
+        ac.ActionChains(driver).click(driver.find_element_by_css_selector('button.login-button.jx-button')).perform()
+        time.sleep(3)
+        error_msg=driver.find_element_by_css_selector("span[class='alert-message error']").text
+        if error_msg!='':
+            print(error_msg)
+            exit(1)
+    else:
+        driver=webdriver.Chrome()
+        driver.get(login_url)
+        print("Please scan two-dimension code to login! And press any key to continue!")
+        input()
+    cookies=driver.get_cookies()
+    mongo_client.insert_or_update_cookies(cookies)
+    return cookies
 
 
 def refresh_cookies(login_with_wechat=False):
