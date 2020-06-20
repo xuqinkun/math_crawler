@@ -382,10 +382,10 @@ class Task(Thread):
                         question_list.append(question_data)
 
                         # 所有标签解析成功后才把图片存入数据库
-                        if len(title_img_list) != 0:
-                            img_list += title_img_list
-                        if len(option_img_list) != 0:
-                            img_list += option_img_list
+                        # if len(title_img_list) != 0:
+                        #     img_list += title_img_list
+                        # if len(option_img_list) != 0:
+                        #     img_list += option_img_list
                         if len(analysis_img_list) != 0:
                             img_list += analysis_img_list
 
