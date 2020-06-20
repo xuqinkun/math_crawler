@@ -345,16 +345,12 @@ class Task(Thread):
                         if not validate_tag(title_tag, question_url):  # Skip tag which resolved failed
                             continue
                         title_sequence, title_img_list = resolve_tag(title_tag)
-                        if len(title_img_list) != 0:
-                            img_list += title_img_list
 
                         # Resolve options
                         options_tag = soup.select_one("div[class=paper-question-options]")
                         if not validate_tag(options_tag, question_url):  # Skip tag which resolved failed
                             continue
                         option_sequence, option_img_list = resolve_options(options_tag)
-                        if len(option_img_list) != 0:
-                            img_list += option_img_list
 
                         # Resolve analysis
                         analyze_tag = soup.select_one("div[class=paper-analyize-wrap]")
@@ -376,8 +372,6 @@ class Task(Thread):
                         else:
                             analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag.contents[0])
                             analysis_sequence[FETCHED] = True
-                        if len(analysis_img_list) != 0:
-                            img_list += analysis_img_list
 
                         message_tag = soup.select_one("div[class=paper-message-attr]")
                         question_message = resolve_message(message_tag)
@@ -386,6 +380,15 @@ class Task(Thread):
                         question_data.update(question_message)
                         question_data.update(analysis_sequence)
                         question_list.append(question_data)
+
+                        # 所有标签解析成功后才把图片存入数据库
+                        if len(title_img_list) != 0:
+                            img_list += title_img_list
+                        if len(option_img_list) != 0:
+                            img_list += option_img_list
+                        if len(analysis_img_list) != 0:
+                            img_list += analysis_img_list
+
                     except Exception as ex:  # 捕获所有异常，出错后单独处理，避免中断
                         print(ex)
                         print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item["id"], question_url))
