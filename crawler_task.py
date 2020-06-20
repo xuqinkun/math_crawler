@@ -231,7 +231,8 @@ def is_valid_cookies(cookies):
 
 
 class Task(Thread):
-    def __init__(self, thread_id=0, thread_nums=1, question_type='', criteria=None, account=None, use_gui=False, max_size=1000):
+    def __init__(self, thread_id=0, thread_nums=1, question_type='',criteria=None,
+                 account=None, use_gui=False, max_size=1000, phantomjs_path=''):
         """
         :param thread_id
         :param question_type:
@@ -249,6 +250,7 @@ class Task(Thread):
         self.max_size = max_size
         self.criteria = criteria
         self.headers = HEADERS.copy()
+        self.phantomjs_path = phantomjs_path
 
     def run(self):
         if self.type == SINGLE_CHOICE:
@@ -276,7 +278,7 @@ class Task(Thread):
             if not self.use_gui:
                 options = Options()
                 options.add_argument('-headless')
-                driver = webdriver.PhantomJS(executable_path=PHANTOMJS_PATH)
+                driver = webdriver.PhantomJS(executable_path=self.phantomjs_path)
                 driver.get(login_url)
                 time.sleep(1)
                 driver.maximize_window()

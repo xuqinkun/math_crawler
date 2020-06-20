@@ -19,7 +19,7 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         print(usage)
         exit(1)
-    PHANTOMJS_PATH = sys.argv[1]
+    phantomjs_path = sys.argv[1]
     accounts = mongo_client.get_accounts()
     count = mongo_client.get_unresolved_url_count()
     batch_size = int(count / len(accounts)) + len(accounts)
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     id = 0
     thread_nums = len(accounts)
     for account in accounts:
-        t = Task(id, thread_nums, SINGLE_CHOICE, criteria, account, False, batch_size)
+        t = Task(id, thread_nums, SINGLE_CHOICE, criteria, account, False, batch_size, phantomjs_path)
         t.start()
         id += 1
 
