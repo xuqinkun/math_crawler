@@ -397,8 +397,8 @@ class Task(Thread):
                         start_time = time.time()
             if len(question_list) > 0:
                 save_questions(self.name, img_list, question_list, start_time, time.time())
-        print("Thread[%s] finished resolving [%d] questions taken %.2f s"
-              % (self.name, begin_time, time.time() - begin_time))
+        print("Thread[%s] finished resolving [%d] questions taken %.2fs"
+              % (self.name, count, time.time() - begin_time))
 
 
 if __name__ == '__main__':
