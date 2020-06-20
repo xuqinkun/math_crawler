@@ -26,9 +26,9 @@ def save_keys(pubkey=b'', privkey=b''):
 
 def load_pub_key():
     pub_key = None
-    pub_filename = keys_path + pubkey_name
-    if os.path.exists(pub_filename):
-        with open(pub_filename, "r") as f:
+    filename = keys_path + pubkey_name
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
             pub_key_str = f.read()
             try:
                 pub_key = rsa.PublicKey.load_pkcs1(str_to_bytes(pub_key_str))
@@ -40,9 +40,9 @@ def load_pub_key():
 
 def load_priv_key():
     priv_key = None
-    priv_filename = keys_path + privkey_name
-    if os.path.exists(priv_filename):
-        with open(priv_filename, "r") as f:
+    filename = keys_path + privkey_name
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
             priv_key_str = f.read()
             try:
                 priv_key = rsa.PrivateKey.load_pkcs1(str_to_bytes(priv_key_str))

@@ -7,6 +7,7 @@ from math_resolve import *
 from selenium import webdriver
 import selenium.webdriver.common.action_chains as ac
 
+
 # Convert the img src to MathML
 def resolve_mathml(src=''):
     url_decode = parse.unquote(src)
@@ -106,7 +107,7 @@ def is_valid_cookies(cookies=[]):
     return True
 
 
-def get_cookies(GUI=False,params={}):
+def get_cookies(use_phantomjs=False, params={}):
     """
         Get cookies after logining in 51jiaoxi and return cookies as dict list.
         GUI: If false, you should provide phone and password to login automatically.
@@ -122,36 +123,37 @@ def get_cookies(GUI=False,params={}):
     cookies = mongo_client.load_cookies()
     if is_valid_cookies(cookies):
         return cookies
-
-    login_url=r'http://www.51jiaoxi.com/login'
-    if GUI==False:
-        driver=webdriver.PhantomJS()
+    login_url = r'http://www.51jiaoxi.com/login'
+    if use_phantomjs:
+        driver = webdriver.PhantomJS()
         driver.get(login_url)
         time.sleep(3)
         ac.actionChains(driver).click(driver.find_element_by_css_selector('div.phone.login-way.wechat-leave')).perform()
         time.sleep(3)
-        ac.ActionChains(driver).send_keys_to_element(driver.find_element_by_id('login-auth-phone'),params['phone']).perform()
+        ac.ActionChains(driver).send_keys_to_element(driver.find_element_by_id('login-auth-phone'),
+                                                     params['phone']).perform()
         time.sleep(1)
-        ac.ActionChains(driver).send_keys_to_element(driver.find_element_by_id('login-auth-password'),params['password']).perform()
+        ac.ActionChains(driver).send_keys_to_element(driver.find_element_by_id('login-auth-password'),
+                                                     params['password']).perform()
         time.sleep(1)
         ac.ActionChains(driver).click(driver.find_element_by_css_selector('button.login-button.jx-button')).perform()
         time.sleep(3)
-        error_msg=driver.find_element_by_css_selector("span[class='alert-message error']").text
-        if error_msg!='':
+        error_msg = driver.find_element_by_css_selector("span[class='alert-message error']").text
+        if error_msg != '':
             print(error_msg)
             exit(1)
     else:
-        driver=webdriver.Chrome()
+        driver = webdriver.Chrome()
         driver.get(login_url)
         print("Please scan two-dimension code to login! And press any key to continue!")
         input()
-    cookies=driver.get_cookies()
+    cookies = driver.get_cookies()
     mongo_client.insert_or_update_cookies(cookies)
     return cookies
 
 
-def refresh_cookies(login_with_wechat=False):
-    cookies = get_cookies(login_with_wechat)
+def refresh_cookies(login_with_wechat=False, use_phantomjs=True):
+    cookies = get_cookies(login_with_wechat, use_phantomjs)
     cookies_str = ''
     for cookie in cookies:
         cookies_str += str(cookie['name']) + '=' + str(cookie['value']) + ';'
