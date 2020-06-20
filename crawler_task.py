@@ -296,7 +296,7 @@ class Task(Thread):
                 driver.find_element_by_id('login-auth-password').send_keys(self.account['password'])
                 driver.find_element_by_css_selector('button.login-button.jx-button').click()
                 time.sleep(1)
-                error_msg = driver.find_element_by_css_selector("span[class=alert-message error]").text
+                error_msg = driver.find_element_by_css_selector("span[class='alert-message error']").text
                 if error_msg != '':
                     print(error_msg)
                     exit(1)
