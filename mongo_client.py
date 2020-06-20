@@ -20,7 +20,10 @@ def insert_one(collection_name='', doc={}):
             collection.insert_one(doc)
             return True
     except DuplicateKeyError as e:
-        # print(e.details)
+        print(e.details)
+        return False
+    except Exception as e:
+        print(e)
         return False
 
 
@@ -34,7 +37,10 @@ def insert_many(collection_name='', docs=[]):
             collection.insert_many(docs)
             return True
     except BulkWriteError as e:
-        # print(e.details)
+        print(e.details)
+        return False
+    except Exception as e:
+        print(e)
         return False
 
 

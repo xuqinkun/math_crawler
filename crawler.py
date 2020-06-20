@@ -8,11 +8,6 @@ import mongo_client
 from config import *
 from math_resolve import *
 
-QUESTION_DETAILS = "question_details"
-
-QUESTION_BATCH_SIZE = 100
-MATHML_TO_IMAGE = 'MathMLToImage'
-
 
 # Convert the img src to MathML
 def resolve_mathml(src=''):
@@ -163,7 +158,7 @@ def resolve_analysis(tag=Tag(name='')):
         value, img_src = resolve_tag(item.contents[1])
         analysis[key] = value
         if len(img_src) != 0:
-            src_list.append(img_src)
+            src_list += img_src
     return analysis, src_list
 
 
@@ -180,7 +175,7 @@ def resolve_message(message_tag=Tag(name='')):
 def update_url_resolved(question_list=[]):
     img_id_list = []
     for q in question_list:
-        img_id_list.append(q['id'])
+        img_id_list.append(q[ID])
     mongo_client.update_url_resolved(img_id_list)
 
 
@@ -191,9 +186,11 @@ def resolve_single(filters):
     question_list = []
     warn = True
     start_time = time.time()
+    begin_time = start_time
+    count = 0
     while True:
         url_list = mongo_client.load_unresolved_url(BATCH_SIZE, last, filters)
-        # url_list = mongo_client.load_url_by_id(["57409"])  # , '1173531', '1895290'
+        count += len(url_list)
         if len(url_list) == 0:
             break
         last += BATCH_SIZE
@@ -212,7 +209,7 @@ def resolve_single(filters):
                         img_list += option_img_list
                     analyze_tag = soup.select_one("div .paper-analyize")
                     analysis_sequence = {}
-                    analysis_img_list = {}
+                    analysis_img_list = []
                     analyze_text = analyze_tag.text
                     if utils.contains_str(analyze_text, '显示答案解析'):
                         print("Warning! You have not login! Answer is invisible!")
@@ -234,26 +231,33 @@ def resolve_single(filters):
                     question_data = {"id": item["id"], "title": title_sequence, "options": option_sequence}
                     question_data.update(question_message)
                     question_data.update(analysis_sequence)
+                    question_list.append(question_data)
                 except Exception as ex:  # 捕获所有异常，出错后单独处理，避免中断
                     print(ex)
                     print("Resolve failed id=[%s]" % item["id"])
-                question_list.append(question_data)
                 if len(question_list) == QUESTION_BATCH_SIZE:
                     save_questions(img_list, question_list, start_time, time.time())
+                    start_time = time.time()
         if len(question_list) > 0:
             save_questions(img_list, question_list, start_time, time.time())
+    print("Resolved [%d] questions taken %.2f s" %(begin_time, time.time() - begin_time))
 
 
 def save_questions(img_list, question_list, start_time, end_time):
     print("Save %d questions to mongo takes %.2f s" % (len(question_list), end_time - start_time))
-    mongo_client.insert_many(QUESTION_DETAILS, question_list)
+    if not mongo_client.insert_many(QUESTION_DETAILS, question_list):
+        print("Insert batch questions failed. Try to insert one by one")
+        for q in question_list:
+            if not mongo_client.insert_one(QUESTION_DETAILS, q):
+                print("Insert question[id=%s] failed. Try to insert one by one" % q[ID])
     update_url_resolved(question_list)
     question_list.clear()
     if len(img_list) != 0:
         if not mongo_client.insert_many(COLLECTION_IMAEG, img_list):
-            print("Insert image src failed. Try to insert one by one")
+            print("Insert batch images failed. Try to insert one by one")
             for img_src in img_list:
-                mongo_client.insert_one(COLLECTION_IMAEG, img_src)
+                if not mongo_client.insert_one(COLLECTION_IMAEG, img_src):
+                    print("Insert image[uuid=%s] failed. Try to insert one by one" % img_src[UUID])
         img_list.clear()
 
 

@@ -19,6 +19,10 @@ COOKIES = "cookies"
 SRC = 'src'
 UUID = 'uuid'
 FETCHED = "analysis_fetched"
+ID = 'id'
+QUESTION_DETAILS = "question_details"
+MATHML_TO_IMAGE = 'MathMLToImage'
+QUESTION_BATCH_SIZE = 100
 
 HEADERS = {
     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
