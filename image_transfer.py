@@ -1,5 +1,5 @@
 import base64
-from constant import *
+from config import *
 # from mongo_client import load_unresolved_imgs,insert_one,update_datas
 
 # local images need encoding
@@ -62,15 +62,19 @@ def baidu_image2str(image_path, types = "characters", src = "url"):
     elif src == "url":
         resp=client.basicGeneralUrl(image_path) #url 
     if types == "characters":
+        if "words_result" not in resp:
+            print("recognition failed!  image_path: " + image_path)
+            print(resp)
+            return ret
         for tex in resp["words_result"]:
             ret = ret + tex["words"]
     elif types == "questions":
         pass
     return ret
 
-print(baidu_image2str("./test.png","characters","local"))
-print(baidu_image2str("http://img.51jiaoxi.com/answer-images/9082d2c8-f08e-4588-9049-aab48f29fb24.png","characters","url"))
-print(tencent_image2str("http://img.51jiaoxi.com/answer-images/9082d2c8-f08e-4588-9049-aab48f29fb24.png","questions","url"))
+# print(baidu_image2str("./test.png","characters","local"))
+print(baidu_image2str("http://img.51jiaoxi.com/answer-images/9082d2c8-f08e-4588-9049-aab48f29fb24","characters","url"))
+print(tencent_image2str("http://img.51jiaoxi.com/answer-images/9082d2c8-f08e-4588-9049-aab48f29fb24","questions","url"))
 
 
 
