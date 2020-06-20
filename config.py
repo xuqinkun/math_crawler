@@ -31,7 +31,9 @@ HEADERS = {
 }
 login_url = r'http://www.51jiaoxi.com/login'
 SINGLE_CHOICE = '单选题'
-
+ID = "id"
+OPTIONS = "options"
+TITLE = "title"
 # ------------------------------------OCR parameters-------------------------------------------
 # COLLECTION_IMG = ""
 #tencent

@@ -12,7 +12,6 @@ import mongo_client as db_client
 import utils
 from config import *
 
-
 def resolve_mathml(src=''):
     """
     Convert the img src to MathML
@@ -376,7 +375,7 @@ class Task(Thread):
                         message_tag = soup.select_one("div[class=paper-message-attr]")
                         question_message = resolve_message(message_tag)
 
-                        question_data = {"id": item["id"], "title": title_sequence, "options": option_sequence}
+                        question_data = {ID: item[ID], TITLE: title_sequence, OPTIONS: option_sequence}
                         question_data.update(question_message)
                         question_data.update(analysis_sequence)
                         question_list.append(question_data)
@@ -391,7 +390,7 @@ class Task(Thread):
 
                     except Exception as ex:  # 捕获所有异常，出错后单独处理，避免中断
                         print(ex)
-                        print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item["id"], question_url))
+                        print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item[ID], question_url))
                     if len(question_list) == QUESTION_BATCH_SIZE:
                         save_questions(self.name, img_list, question_list, start_time, time.time())
                         start_time = time.time()
