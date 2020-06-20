@@ -137,7 +137,7 @@ def resolve_options(tag=Tag(name='')):
             elif len(value_tag.contents) != 0:
                 values, temp_map = resolve_tag_unclosed(value_tag)
                 if len(temp_map) != 0:
-                    src_map.append(temp_map)
+                    src_map += temp_map
                 options.update({op: values})
             elif isinstance(value_tag, Tag):
                 value, temp_map = resolve_single_tag(value_tag)
@@ -179,8 +179,14 @@ def update_url_resolved(question_list=[]):
     mongo_client.update_url_resolved(img_id_list)
 
 
+def is_valid_list(data=[]):
+    for item in data:
+        if isinstance(item, list):
+            print(item)
+
+
 # 单选题解析
-def resolve_single(filters):
+def resolve_single(criteria):
     last = 0
     img_list = []
     question_list = []
@@ -189,7 +195,8 @@ def resolve_single(filters):
     begin_time = start_time
     count = 0
     while True:
-        url_list = mongo_client.load_unresolved_url(BATCH_SIZE, last, filters)
+        url_list = mongo_client.load_unresolved_url(BATCH_SIZE, last, criteria)
+        # url_list = mongo_client.load_url_by_id(['240017'])
         count += len(url_list)
         if len(url_list) == 0:
             break
@@ -199,14 +206,20 @@ def resolve_single(filters):
                 try:
                     resp = requests.get(url=item['url'], headers=HEADERS)
                     soup = BeautifulSoup(resp.text, 'html.parser')
+
+                    # Resolve title
                     title_tag = soup.select_one("div .paper-question-title")
                     title_sequence, title_img_list = resolve_tag(title_tag)
                     if len(title_img_list) != 0:
                         img_list += title_img_list
+
+                    # Resolve options
                     options_tag = soup.select_one("div .paper-question-options")
                     option_sequence, option_img_list = resolve_options(options_tag)
                     if len(option_img_list) != 0:
                         img_list += option_img_list
+
+                    # Resovle analysis
                     analyze_tag = soup.select_one("div .paper-analyize")
                     analysis_sequence = {}
                     analysis_img_list = []

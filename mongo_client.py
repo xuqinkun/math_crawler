@@ -152,6 +152,5 @@ if __name__ == '__main__':
     # b = load_img_src()
     # c = set(a).difference(set(b))
     # print(c)
-    target = ['2b304400-fb23-11e9-847f-55f975649075', 'c5e0ae10-1b08-11ea-a1c6-035417be02d6',
-              '34c30fa0-f95a-11e9-bead-fd2cb01958df', 'b51716c0-fb47-11e9-904f-8f35efb1f477']
+    target = ['c5e0ae10-1b08-11ea-a1c6-035417be02d6']
     print(get_png_list(target))
