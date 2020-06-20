@@ -1,6 +1,3 @@
-import re
-from urllib import parse
-
 import latex2mathml.converter as converter
 from bs4 import BeautifulSoup
 from mathml2latex import mathml

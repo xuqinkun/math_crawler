@@ -73,6 +73,10 @@ def rsa_decrypt(secret_text):
     return rsa.decrypt(secret_text, priv_key).decode("utf-8")
 
 
+def contains_str(src='', target=''):
+    return src.find(target) != -1
+
+
 if __name__ == "__main__":
     secret_str = rsa_encrypt("hello")
     print("Secret_str: %s" % secret_str)
