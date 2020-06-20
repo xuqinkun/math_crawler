@@ -296,7 +296,7 @@ class Task(Thread):
                 driver.find_element_by_id('login-auth-password').send_keys(self.account['password'])
                 driver.find_element_by_css_selector('button.login-button.jx-button').click()
                 time.sleep(1)
-                error_msg = driver.find_element_by_css_selector("span[class='alert-message error']").text
+                error_msg = driver.find_element_by_css_selector("span[class=alert-message error]").text
                 if error_msg != '':
                     print(error_msg)
                     exit(1)
@@ -336,11 +336,12 @@ class Task(Thread):
                         question_url = item['url']
                         resp = requests.get(url=question_url, headers=self.headers)
                         if resp.status_code != requests.codes.ok:
-                            print("Resolved failed for url[%s]" % question_url)
+                            print("Resolved failed for url[%s] status_code[%d]" % (question_url, resp.status_code))
+                            continue
                         soup = BeautifulSoup(resp.text, 'html.parser')
 
                         # Resolve title
-                        title_tag = soup.select_one("div[class='paper-question-title']")
+                        title_tag = soup.select_one("div[class=paper-question-title]")
                         if not validate_tag(title_tag, question_url):  # Skip tag which resolved failed
                             continue
                         title_sequence, title_img_list = resolve_tag(title_tag)
@@ -348,7 +349,7 @@ class Task(Thread):
                             img_list += title_img_list
 
                         # Resolve options
-                        options_tag = soup.select_one("div[class='paper-question-options']")
+                        options_tag = soup.select_one("div[class=paper-question-options]")
                         if not validate_tag(options_tag, question_url):  # Skip tag which resolved failed
                             continue
                         option_sequence, option_img_list = resolve_options(options_tag)
@@ -356,7 +357,7 @@ class Task(Thread):
                             img_list += option_img_list
 
                         # Resolve analysis
-                        analyze_tag = soup.select_one("div[class='paper-analyize-wrap']")
+                        analyze_tag = soup.select_one("div[class=paper-analyize-wrap]")
                         if not validate_tag(analyze_tag, question_url):  # Skip tag which resolved failed
                             continue
                         analyze_text = analyze_tag.text
@@ -378,7 +379,7 @@ class Task(Thread):
                         if len(analysis_img_list) != 0:
                             img_list += analysis_img_list
 
-                        message_tag = soup.select_one("div[class='paper-message-attr']")
+                        message_tag = soup.select_one("div[class=paper-message-attr]")
                         question_message = resolve_message(message_tag)
 
                         question_data = {"id": item["id"], "title": title_sequence, "options": option_sequence}
