@@ -186,7 +186,7 @@ def is_valid_list(data=[]):
 
 
 # 单选题解析
-def resolve_single(criteria):
+def resolve_single(criteria={}):
     last = 0
     img_list = []
     question_list = []
@@ -253,7 +253,7 @@ def resolve_single(criteria):
                     start_time = time.time()
         if len(question_list) > 0:
             save_questions(img_list, question_list, start_time, time.time())
-    print("Resolved [%d] questions taken %.2f s" %(begin_time, time.time() - begin_time))
+    print("Resolved [%d] questions taken %.2f s" % (begin_time, time.time() - begin_time))
 
 
 def save_questions(img_list, question_list, start_time, end_time):
@@ -329,5 +329,7 @@ def refresh_cookies(login_with_wechat=False):
 
 if __name__ == '__main__':
     refresh_cookies(False)
-    filters = {"type": "单选题", }
-    resolve_single(filters)
+
+    # exclude: $nin, include: $in
+    criteria = {"type": "单选题", "class.class1": {"$nin": ["图形的性质", "图形的变换"]}}
+    resolve_single(criteria)
