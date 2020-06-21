@@ -34,6 +34,8 @@ SINGLE_CHOICE = '单选题'
 ID = "id"
 OPTIONS = "options"
 TITLE = "title"
+
+LOCAL_IMG_DIR = "./LocalImages/"
 # ------------------------------------OCR parameters-------------------------------------------
 #tencent
 Tencent_API_KEY = "your_api_key"

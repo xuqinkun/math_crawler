@@ -1,6 +1,8 @@
 import os
 from PIL import Image,ImageSequence
 import rsa
+import requests
+from config import LOCAL_IMG_DIR
 
 keys_path = './keys/'
 pubkey_name = "public.pem"
@@ -76,8 +78,14 @@ def rsa_decrypt(secret_text):
 def contains_str(src='', target=''):
     return src.find(target) != -1
 
-def get_PNG_img():
-    pass
+def url_img_download(url):
+    if os.path.exists(LOCAL_IMG_DIR) is False:
+        os.mkdir(LOCAL_IMG_DIR)
+    img_path = LOCAL_IMG_DIR + url.split('/')[-1]
+    img=requests.get(url)
+    with open(img_path,'wb') as f:
+        f.write(img.content)
+    return img_path
 
 def image_transform(origin_img_path):
     '''
@@ -85,24 +93,20 @@ def image_transform(origin_img_path):
         generate new image that satisfy the need of ocr. 
         return the path to the new image.
     '''
-    im=Image.open(origin_img_path)
+    im = Image.open(origin_img_path)
     name,file_format=os.path.splitext(origin_img_path)
 
     if file_format=='gif':
         #get the first image in this gif
         im=ImageSequence.all_frames(im)[0]
-
     h,w=im.size
-    if min(h,w)<15:
-        if min(h,w)==h:
-            w=int(w*15/h)
-            h=15
-        else:
-            h=int(h*15/w)
-            w=15
-        im.resize(h,w)
-
-    output_path=name+'.png'
+    h = max(16,h)
+    h = min(4096,h)
+    w = max(16,w)
+    w = min(4096,w)
+    im = im.resize((h,w))
+    output_path=name + '.png'
+    print("Save local image:%s, resize: " %output_path,im.size)
     im=im.convert('RGBA')
     im.save(output_path)
     return output_path
