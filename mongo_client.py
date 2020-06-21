@@ -175,15 +175,45 @@ def get_accounts():
     return account_list
 
 
+def get_img_of_options():
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client[DB]
+        collection = db[QUESTION_DETAILS]
+        docs = collection.find({})
+        uuids = []
+        for doc in docs:
+            option = doc[OPTIONS]
+            for values in option.values():
+                for value in values:
+                    for key in value.keys():
+                        if key != MATH_ML and key != PLAIN_TEXT:
+                            uuids.append(value[key])
+        return uuids
+
+
+def get_img_of_title():
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client[DB]
+        collection = db[QUESTION_DETAILS]
+        docs = collection.find({})
+        uuids = []
+        for doc in docs:
+            title = doc[TITLE]
+            for item in title:
+                for key in item.keys():
+                    if key != MATH_ML and key != PLAIN_TEXT:
+                        uuids.append(item[key])
+        return uuids
+
+
+def remove_img(uuid_list):
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client[DB]
+        collection = db[COLLECTION_IMAGE]
+        ret = collection.delete_many({UUID: {"$in": uuid_list}})
+        print(ret.deleted_count)
+
+
 if __name__ == '__main__':
-    # data = load_unresolved_url("question_url", 10, 0)
-    # print(data)
-    # id = ["2362246"]
-    # update_url_resolved(id)
-    # print()
-    # a = get_png_list()
-    # b = load_img_src()
-    # c = set(a).difference(set(b))
-    # print(c)
-    target = ['c5e0ae10-1b08-11ea-a1c6-035417be02d6']
-    print(get_png_list(target))
+    img_list1 = get_img_of_title()
+    img_list2 = get_img_of_options()

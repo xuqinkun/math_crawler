@@ -31,9 +31,9 @@ HEADERS = {
 }
 login_url = r'http://www.51jiaoxi.com/login'
 SINGLE_CHOICE = '单选题'
-
-PHANTOMJS_PATH = "D:\\Tools\\ChromeDriver\\phantomjs-2.1.1-windows\\bin\\phantomjs.exe"
-
+ID = "id"
+OPTIONS = "options"
+TITLE = "title"
 # ------------------------------------OCR parameters-------------------------------------------
 #tencent
 Tencent_API_KEY = "your_api_key"

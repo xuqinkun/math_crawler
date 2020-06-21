@@ -1,5 +1,5 @@
 import os
-
+from PIL import Image,ImageSequence
 import rsa
 
 keys_path = './keys/'
@@ -78,6 +78,35 @@ def contains_str(src='', target=''):
 
 def get_PNG_img():
     pass
+
+def image_transform(origin_img_path):
+    '''
+        input the path to the origin image and check its format and size.
+        generate new image that satisfy the need of ocr. 
+        return the path to the new image.
+    '''
+    im=Image.open(origin_img_path)
+    name,file_format=os.path.splitext(origin_img_path)
+
+    if file_format=='gif':
+        #get the first image in this gif
+        im=ImageSequence.all_frames(im)[0]
+
+    h,w=im.size
+    if min(h,w)<15:
+        if min(h,w)==h:
+            w=int(w*15/h)
+            h=15
+        else:
+            h=int(h*15/w)
+            w=15
+        im.resize(h,w)
+
+    output_path=name+'.png'
+    im=im.convert('RGBA')
+    im.save(output_path)
+    return output_path
+
 
 if __name__ == "__main__":
     secret_str = rsa_encrypt("hello")

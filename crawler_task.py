@@ -12,7 +12,6 @@ import mongo_client as db_client
 import utils
 from config import *
 
-
 def resolve_mathml(src=''):
     """
     Convert the img src to MathML
@@ -230,8 +229,17 @@ def is_valid_cookies(cookies):
     return True
 
 
+def validate_tag(tag, url):
+    if tag is None:
+        print("Resolved failed for url[%s]" % url)
+        return False
+    else:
+        return True
+
+
 class Task(Thread):
-    def __init__(self, thread_id=0, thread_nums=1, question_type='', criteria=None, account=None, use_gui=False, max_size=1000):
+    def __init__(self, thread_id=0, thread_nums=1, question_type='',criteria=None,
+                 account=None, use_gui=False, max_size=1000, phantomjs_path=''):
         """
         :param thread_id
         :param question_type:
@@ -249,6 +257,7 @@ class Task(Thread):
         self.max_size = max_size
         self.criteria = criteria
         self.headers = HEADERS.copy()
+        self.phantomjs_path = phantomjs_path
 
     def run(self):
         if self.type == SINGLE_CHOICE:
@@ -276,7 +285,7 @@ class Task(Thread):
             if not self.use_gui:
                 options = Options()
                 options.add_argument('-headless')
-                driver = webdriver.PhantomJS(executable_path=PHANTOMJS_PATH)
+                driver = webdriver.PhantomJS(executable_path=self.phantomjs_path)
                 driver.get(login_url)
                 time.sleep(1)
                 driver.maximize_window()
@@ -315,7 +324,7 @@ class Task(Thread):
             offset = last + BATCH_SIZE * self.id
             url_list = db_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
             print("Thread[%s] start to fetch [%d] questions" %(self.name, BATCH_SIZE))
-            # url_list = mongo_client.load_url_by_id(['240017'])
+            # url_list = db_client.load_url_by_id(['1901554'])
             count += len(url_list)
             last += BATCH_SIZE * self.thread_nums
             if len(url_list) == 0:
@@ -323,26 +332,32 @@ class Task(Thread):
             for item in url_list:
                 if not item[RESOLVED]:  # False indicates current url has not been resolved yet
                     try:
-                        resp = requests.get(url=item['url'], headers=self.headers)
+                        question_url = item['url']
+                        resp = requests.get(url=question_url, headers=self.headers)
+                        if resp.status_code != requests.codes.ok:
+                            print("Resolved failed for url[%s] status_code[%d]" % (question_url, resp.status_code))
+                            continue
                         soup = BeautifulSoup(resp.text, 'html.parser')
 
                         # Resolve title
-                        title_tag = soup.select_one("div .paper-question-title")
+                        title_tag = soup.select_one("div[class=paper-question-title]")
+                        if not validate_tag(title_tag, question_url):  # Skip tag which resolved failed
+                            continue
                         title_sequence, title_img_list = resolve_tag(title_tag)
-                        if len(title_img_list) != 0:
-                            img_list += title_img_list
 
                         # Resolve options
-                        options_tag = soup.select_one("div .paper-question-options")
+                        options_tag = soup.select_one("div[class=paper-question-options]")
+                        if not validate_tag(options_tag, question_url):  # Skip tag which resolved failed
+                            continue
                         option_sequence, option_img_list = resolve_options(options_tag)
-                        if len(option_img_list) != 0:
-                            img_list += option_img_list
 
                         # Resolve analysis
-                        analyze_tag = soup.select_one("div .paper-analyize-wrap")
+                        analyze_tag = soup.select_one("div[class=paper-analyize-wrap]")
+                        if not validate_tag(analyze_tag, question_url):  # Skip tag which resolved failed
+                            continue
+                        analyze_text = analyze_tag.text
                         analysis_sequence = {}
                         analysis_img_list = []
-                        analyze_text = analyze_tag.text
                         if utils.contains_str(analyze_text, '显示答案解析'):
                             print("Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
                             if self.refresh_cookies():
@@ -356,26 +371,33 @@ class Task(Thread):
                         else:
                             analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag.contents[0])
                             analysis_sequence[FETCHED] = True
-                        if len(analysis_img_list) != 0:
-                            img_list += analysis_img_list
 
-                        message_tag = soup.select_one("div .paper-message-attr")
+                        message_tag = soup.select_one("div[class=paper-message-attr]")
                         question_message = resolve_message(message_tag)
 
-                        question_data = {"id": item["id"], "title": title_sequence, "options": option_sequence}
+                        question_data = {ID: item[ID], TITLE: title_sequence, OPTIONS: option_sequence}
                         question_data.update(question_message)
                         question_data.update(analysis_sequence)
                         question_list.append(question_data)
+
+                        # 所有标签解析成功后才把图片存入数据库
+                        # if len(title_img_list) != 0:
+                        #     img_list += title_img_list
+                        # if len(option_img_list) != 0:
+                        #     img_list += option_img_list
+                        if len(analysis_img_list) != 0:
+                            img_list += analysis_img_list
+
                     except Exception as ex:  # 捕获所有异常，出错后单独处理，避免中断
                         print(ex)
-                        print("Thread[%s] resolve failed id=[%s]" % (self.name, item["id"]))
+                        print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item[ID], question_url))
                     if len(question_list) == QUESTION_BATCH_SIZE:
                         save_questions(self.name, img_list, question_list, start_time, time.time())
                         start_time = time.time()
             if len(question_list) > 0:
                 save_questions(self.name, img_list, question_list, start_time, time.time())
-        print("Thread[%s] finished resolving [%d] questions taken %.2f s"
-              % (self.name, begin_time, time.time() - begin_time))
+        print("Thread[%s] finished resolving [%d] questions taken %.2fs"
+              % (self.name, count, time.time() - begin_time))
 
 
 if __name__ == '__main__':
