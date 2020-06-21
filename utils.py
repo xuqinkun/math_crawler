@@ -76,6 +76,8 @@ def rsa_decrypt(secret_text):
 def contains_str(src='', target=''):
     return src.find(target) != -1
 
+def get_PNG_img():
+    pass
 
 if __name__ == "__main__":
     secret_str = rsa_encrypt("hello")

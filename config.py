@@ -5,7 +5,7 @@ PLAIN_TEXT = 'plain_text'
 LATEX = 'latex'
 IMAGE = 'img'
 MATH_ML = 'mathml'
-COLLECTION_IMAEG = "image"
+COLLECTION_IMAGE = "image"
 RESOLVED = "resolved"
 login_url = 'http://www.51jiaoxi.com/login'
 MONGO_HOST = '121.48.165.7'
@@ -35,11 +35,12 @@ SINGLE_CHOICE = '单选题'
 PHANTOMJS_PATH = "D:\\Tools\\ChromeDriver\\phantomjs-2.1.1-windows\\bin\\phantomjs.exe"
 
 # ------------------------------------OCR parameters-------------------------------------------
-# COLLECTION_IMG = ""
 #tencent
 Tencent_API_KEY = "your_api_key"
 Tencent_SECRET_KEY = "your_secret_key"
 #baidu
-Baidu_APP_ID = "your_app_id"
-Baidu_API_KEY = "your_api_key"
-Baidu_SECRET_KEY = "your_secret_key"
+Baidu_APP_ID = "20481895"
+Baidu_API_KEY = "jcqLdnhT3Ob4jflDqboKoG1z"
+Baidu_SECRET_KEY = "KAAcqOuXbtDPVgdH0NPXtGj6LZdPiO5i"
+#OCR batch_size
+OCR_BATCH_SIZE = 300

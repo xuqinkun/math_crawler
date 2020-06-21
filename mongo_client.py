@@ -89,6 +89,19 @@ def update_url_resolved(img_id_list=[]):
             collection.update_one(filter={"id": id}, update={"$set": {RESOLVED: True}})
     return True
 
+def update_img_info(img_text_list={}):
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client[DB]
+        collection = db[COLLECTION_IMAGE]
+        count = 0
+        for uuid, text in img_text_list.items():
+            print(uuid,text)
+            if text != "":
+                collection.update_one(filter={UUID: uuid}, update={"$set": {RESOLVED: True, PLAIN_TEXT: text}})
+                count = count + 1
+        print("%d images text updated "% count)
+    return True
+
 
 def resolve_png_keys(docs):
     png_list = []
@@ -133,10 +146,11 @@ def load_img_src():
         db = client[DB]
         collection = db[COLLECTION_IMAGE]
         docs = collection.find({})
-        png_list = []
+        png_dict = {}
         for doc in docs:
-            png_list.append(doc[UUID])
-        return png_list
+            if doc[RESOLVED] == False:
+                png_dict[doc[UUID]] = doc["src"]
+        return png_dict
 
 
 def get_unresolved_url_count():
