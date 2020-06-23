@@ -12,6 +12,7 @@ import mongo_client as db_client
 import utils
 from config import *
 
+
 def resolve_mathml(src=''):
     """
     Convert the img src to MathML
@@ -196,7 +197,7 @@ def update_url_resolved(question_list):
     db_client.update_url_resolved(url_id_list)
 
 
-def save_questions(thread_name, img_list, question_list, start_time, end_time,analysis_only=False):
+def save_questions(thread_name, img_list, question_list, start_time, end_time, analysis_only=False):
     print("Thread[%s] save %d questions to DB takes %.2fs" % (thread_name, len(question_list), end_time - start_time))
     if analysis_only:
         for analysis_data in question_list:
@@ -207,7 +208,8 @@ def save_questions(thread_name, img_list, question_list, start_time, end_time,an
             print("Thread[%s] insert batch questions failed. Try to insert one by one", thread_name)
             for question in question_list:
                 if not db_client.insert_one(QUESTION_DETAILS, question):
-                    print("Thread[%s] insert question[id=%s] failed. Try to insert one by one" % (thread_name, question[ID]))
+                    print("Thread[%s] insert question[id=%s] failed. Try to insert one by one" % (
+                    thread_name, question[ID]))
         update_url_resolved(question_list)
         question_list.clear()
 
@@ -216,7 +218,8 @@ def save_questions(thread_name, img_list, question_list, start_time, end_time,an
             print("Thread[%s] inserted batch images failed. Try to insert one by one", thread_name)
             for img_src in img_list:
                 if not db_client.insert_one(COLLECTION_IMAGE, img_src):
-                    print("Thread[%s] inserted image[uuid=%s] failed. Try to insert one by one" % (thread_name, img_src[UUID]))
+                    print("Thread[%s] inserted image[uuid=%s] failed. Try to insert one by one" % (
+                    thread_name, img_src[UUID]))
         img_list.clear()
 
 
@@ -245,7 +248,7 @@ def validate_tag(tag, url):
 
 class Task(Thread):
     def __init__(self, thread_id=0, thread_nums=1, question_type='', criteria=None,
-                 account=None, use_gui=False, max_size=1000, phantomjs_path='',analysis_only=False):
+                 account=None, use_gui=False, max_size=1000, phantomjs_path='', analysis_only=False):
         """
         :param thread_id
         :param question_type:
@@ -264,7 +267,7 @@ class Task(Thread):
         self.criteria = criteria
         self.headers = HEADERS.copy()
         self.phantomjs_path = phantomjs_path
-        self.analysis_only=analysis_only
+        self.analysis_only = analysis_only
 
     def run(self):
         if self.type == SINGLE_CHOICE:
@@ -372,7 +375,8 @@ class Task(Thread):
                         analysis_sequence = {}
                         analysis_img_list = []
                         if utils.contains_str(analyze_text, '显示答案解析'):
-                            print("Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
+                            print(
+                                "Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
                             if self.refresh_cookies():
                                 print("Thread[%s] refresh cookies success!" % self.name)
                             analysis_sequence[FETCHED] = False
@@ -412,7 +416,7 @@ class Task(Thread):
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
               % (self.name, count, time.time() - begin_time))
 
-    def only_for_analysis(self,criteria):
+    def only_for_analysis(self, criteria):
         last = 0
         img_list = []
         question_list = []
@@ -423,8 +427,8 @@ class Task(Thread):
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
             unfetched_data = db_client.load_unfetched_data(BATCH_SIZE, offset, criteria)
-            id_list=[item['id'] for item in unfetched_data]
-            
+            id_list = [item['id'] for item in unfetched_data]
+
             url_list = db_client.find_url_by_ids(id_list)
             print("Thread[%s] start to fetch [%d] questions" % (self.name, BATCH_SIZE))
             # url_list = db_client.load_url_by_id(['1997544'])
@@ -433,7 +437,7 @@ class Task(Thread):
             if len(url_list) == 0:
                 break
             for item in url_list:
-            #if not item[FETCHED]:  # False indicates current url has not been resolved yet
+                # if not item[FETCHED]:  # False indicates current url has not been resolved yet
                 question_url = item['url']
                 try:
                     resp = requests.get(url=question_url, headers=self.headers)
@@ -453,7 +457,8 @@ class Task(Thread):
                     analysis_sequence = {}
                     analysis_img_list = []
                     if utils.contains_str(analyze_text, '显示答案解析'):
-                        print("Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
+                        print(
+                            "Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
                         if self.refresh_cookies():
                             print("Thread[%s] refresh cookies success!" % self.name)
                         analysis_sequence[FETCHED] = False
@@ -461,9 +466,8 @@ class Task(Thread):
                         if warn:
                             print("Sorry! Thread[%s] has run out of the accessing times for analysis!" % self.name)
                             warn = False
-                        analysis_sequence[FETCHED] = False
                         if len(question_list) > 0:
-                            save_questions(self.name, img_list, question_list, start_time, time.time(),True)
+                            save_questions(self.name, img_list, question_list, start_time, time.time(), True)
                         return
                     else:
                         analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag)
@@ -473,11 +477,6 @@ class Task(Thread):
                     question_data.update(analysis_sequence)
                     question_list.append(question_data)
 
-                    # 所有标签解析成功后才把图片存入数据库
-                    # if len(title_img_list) != 0:
-                    #     img_list += title_img_list
-                    # if len(option_img_list) != 0:
-                    #     img_list += option_img_list
                     if len(analysis_img_list) != 0:
                         img_list += analysis_img_list
 
@@ -485,12 +484,13 @@ class Task(Thread):
                     print(ex)
                     print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item[ID], question_url))
                 if len(question_list) == QUESTION_BATCH_SIZE:
-                    save_questions(self.name, img_list, question_list, start_time, time.time(),True)
+                    save_questions(self.name, img_list, question_list, start_time, time.time(), True)
                     start_time = time.time()
             if len(question_list) > 0:
-                save_questions(self.name, img_list, question_list, start_time, time.time(),True)
+                save_questions(self.name, img_list, question_list, start_time, time.time(), True)
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
               % (self.name, count, time.time() - begin_time))
+
 
 if __name__ == '__main__':
     options = Options()

@@ -21,6 +21,6 @@ def insert_accounts():
 
 
 if __name__ == "__main__":
-    # insert_accounts()
+    insert_accounts()
     id_list = mongo_client.get_accounts()
     print(id_list)

@@ -12,7 +12,6 @@ MONGO_HOST = 'localhost'
 MONGO_PORT = 27017
 DB = 'math_questions'
 ACCOUNT = "account"
-COOKIE = 'cookie'
 COOKIES = "cookies"
 SRC = 'src'
 UUID = 'uuid'
@@ -22,19 +21,14 @@ QUESTION_DETAILS = "question_details"
 MATHML_TO_IMAGE = 'MathMLToImage'
 QUESTION_BATCH_SIZE = 100
 QUESTION_URL = 'question_url'
-COLLECTION_IMAGE = 'image'
 PHONE = 'phone'
 HEADERS = {
     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) " +
                   "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36",
 }
-login_url = r'http://www.51jiaoxi.com/login'
-SINGLE_CHOICE = '单选题'
-ID = "id"
 OPTIONS = "options"
 TITLE = "title"
-ANALYSIS_ONLY=True
 LOCAL_IMG_DIR = "./LocalImages/"
 # ------------------------------------OCR parameters-------------------------------------------
 #tencent

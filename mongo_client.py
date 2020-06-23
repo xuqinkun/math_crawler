@@ -199,6 +199,7 @@ def get_fetched_false_count(criteria):
         criteria[FETCHED] = False
         return collection.count(criteria)
 
+
 def get_accounts():
     """
     From mongodb get id and password data
