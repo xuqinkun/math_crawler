@@ -103,6 +103,17 @@ def update_img_info(img_text_list={}):
     return True
 
 
+def updata_analysis(analysis_data={}):
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client[DB]
+        collection = db[QUESTION_DETAILS]
+        question_id=analysis_data[ID]
+        analysis_data.pop(ID)
+        print(analysis_data)
+        AAA=analysis_data
+        collection.update_one(filter={"id":question_id},update={"$set":analysis_data})
+
+
 def resolve_png_keys(docs):
     png_list = []
     if isinstance(docs, list):
@@ -160,6 +171,13 @@ def get_unresolved_url_count(criteria):
         criteria[RESOLVED] = False
         return collection.count(criteria)
 
+
+def get_fetched_false_count(criteria):
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client[DB]
+        collection = db[QUESTION_URL]
+        criteria[FETCHED] = False
+        return collection.count(criteria)
 
 def get_accounts():
     """
