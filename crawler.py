@@ -26,9 +26,11 @@ if __name__ == '__main__':
     # Exclude: $nin, include: $in
     criteria = {"class.class1": {"$nin": ["图形的性质", "图形的变换"]}}
     id = 0
-    thread_nums = len(accounts)
+    # thread_nums = len(accounts)
+    thread_nums = 1
     for account in accounts:
-        t = Task(id, thread_nums, SINGLE_CHOICE, criteria, account, False, batch_size, phantomjs_path)
+        t = Task(id, thread_nums, COMPUTATION, criteria, account, False, batch_size, phantomjs_path)
         t.start()
         id += 1
+        break
 
