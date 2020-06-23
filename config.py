@@ -8,8 +8,8 @@ MATH_ML = 'mathml'
 COLLECTION_IMAGE = "image"
 RESOLVED = "resolved"
 login_url = 'http://www.51jiaoxi.com/login'
-MONGO_HOST = '121.48.165.7'
-MONGO_PORT = 11118
+MONGO_HOST = 'localhost'
+MONGO_PORT = 27017
 DB = 'math_questions'
 ACCOUNT = "account"
 COOKIE = 'cookie'
@@ -34,7 +34,8 @@ SINGLE_CHOICE = '单选题'
 ID = "id"
 OPTIONS = "options"
 TITLE = "title"
-
+ANALYSIS_ONLY=True
+AAA={}
 LOCAL_IMG_DIR = "./LocalImages/"
 # ------------------------------------OCR parameters-------------------------------------------
 #tencent
