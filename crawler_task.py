@@ -190,10 +190,10 @@ def resolve_message(message_tag=Tag(name='')):
 
 
 def update_url_resolved(question_list):
-    img_id_list = []
+    url_id_list = []
     for q in question_list:
-        img_id_list.append(q[ID])
-    db_client.update_url_resolved(img_id_list)
+        url_id_list.append(q[ID])
+    db_client.update_url_resolved(url_id_list)
 
 
 def save_questions(thread_name, img_list, question_list, start_time, end_time):
@@ -264,7 +264,8 @@ class Task(Thread):
             criteria = {"type": self.type}
             if self.criteria is not None:
                 criteria.update(self.criteria)
-            self.refresh_cookies()
+            if self.refresh_cookies():
+                print("Login succeed!")
             self.resolve_single(criteria)
 
     def refresh_cookies(self):
