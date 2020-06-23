@@ -202,14 +202,6 @@ def save_questions(thread_name, img_list, question_list, start_time, end_time,an
         for analysis_data in question_list:
             db_client.updata_analysis(analysis_data)
         question_list.clear()
-        if len(img_list) != 0:
-            if not db_client.insert_many(COLLECTION_IMAGE, img_list):
-                print("Thread[%s] inserted batch images failed. Try to insert one by one", thread_name)
-                for img_src in img_list:
-                    if not db_client.insert_one(COLLECTION_IMAGE, img_src):
-                        print("Thread[%s] inserted image[uuid=%s] failed. Try to insert one by one" % (thread_name, img_src[UUID]))
-            img_list.clear()
-
     else:
         if not db_client.insert_many(QUESTION_DETAILS, question_list):
             print("Thread[%s] insert batch questions failed. Try to insert one by one", thread_name)
@@ -218,13 +210,14 @@ def save_questions(thread_name, img_list, question_list, start_time, end_time,an
                     print("Thread[%s] insert question[id=%s] failed. Try to insert one by one" % (thread_name, question[ID]))
         update_url_resolved(question_list)
         question_list.clear()
-        if len(img_list) != 0:
-            if not db_client.insert_many(COLLECTION_IMAGE, img_list):
-                print("Thread[%s] inserted batch images failed. Try to insert one by one", thread_name)
-                for img_src in img_list:
-                    if not db_client.insert_one(COLLECTION_IMAGE, img_src):
-                        print("Thread[%s] inserted image[uuid=%s] failed. Try to insert one by one" % (thread_name, img_src[UUID]))
-            img_list.clear()
+
+    if len(img_list) != 0:
+        if not db_client.insert_many(COLLECTION_IMAGE, img_list):
+            print("Thread[%s] inserted batch images failed. Try to insert one by one", thread_name)
+            for img_src in img_list:
+                if not db_client.insert_one(COLLECTION_IMAGE, img_src):
+                    print("Thread[%s] inserted image[uuid=%s] failed. Try to insert one by one" % (thread_name, img_src[UUID]))
+        img_list.clear()
 
 
 def is_valid_cookies(cookies):
@@ -469,6 +462,9 @@ class Task(Thread):
                             print("Sorry! Thread[%s] has run out of the accessing times for analysis!" % self.name)
                             warn = False
                         analysis_sequence[FETCHED] = False
+                        if len(question_list) > 0:
+                            save_questions(self.name, img_list, question_list, start_time, time.time(),True)
+                        return
                     else:
                         analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag)
                         analysis_sequence[FETCHED] = True
