@@ -35,7 +35,6 @@ ID = "id"
 OPTIONS = "options"
 TITLE = "title"
 ANALYSIS_ONLY=True
-AAA={}
 LOCAL_IMG_DIR = "./LocalImages/"
 # ------------------------------------OCR parameters-------------------------------------------
 #tencent
