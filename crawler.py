@@ -1,5 +1,5 @@
 import sys
-
+import json
 import mongo_client
 from config import *
 from crawler_task import Task
@@ -13,15 +13,20 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         print(usage)
         exit(1)
-    phantomjs_path = sys.argv[1]
+    phantomjs_path =sys.argv[0]
     accounts = mongo_client.get_accounts()
     criteria = {"class.class1": {"$nin": ["图形的性质", "图形的变换"]}, "type": SINGLE_CHOICE}
-    count = mongo_client.get_unresolved_url_count(criteria)
+    #criteria = {"type": SINGLE_CHOICE}
+    if ANALYSIS_ONLY:
+        count=mongo_client.get_fetched_false_count(criteria)
+    else:
+        count = mongo_client.get_unresolved_url_count(criteria)
+    
     thread_nums = len(accounts)
     batch_size = int(count / thread_nums) + len(accounts)
     # Exclude: $nin, include: $in
     id = 0
     for account in accounts:
-        t = Task(id, thread_nums, SINGLE_CHOICE, criteria, account, False, batch_size, phantomjs_path)
+        t = Task(id, thread_nums, SINGLE_CHOICE, criteria, account, False, batch_size, phantomjs_path,ANALYSIS_ONLY)
         t.start()
         id += 1
