@@ -50,6 +50,28 @@ def load_unresolved_url(num=0, start=0, criteria={}):
             data.append(doc)
         return data
 
+def load_unfetched_data(num=0,start=0,criteria={}):
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client[DB]
+        collection = db[QUESTION_DETAILS]
+        criteria[FETCHED] = False
+        docs = collection.find(criteria).skip(start).limit(num)
+        data = []
+        for doc in docs:
+            data.append(doc)
+        return data
+
+
+def find_url_by_ids(ids=[]):
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client[DB]
+        collection = db[QUESTION_URL]
+        docs = collection.find({ID: {"$in": ids}})
+        data=[]
+        for doc in docs:
+            data.append(doc)
+        return data
+
 
 def load_url_by_id(ids=[]):
     with MongoClient(MONGO_HOST, MONGO_PORT) as client:
@@ -109,8 +131,6 @@ def updata_analysis(analysis_data={}):
         collection = db[QUESTION_DETAILS]
         question_id=analysis_data[ID]
         analysis_data.pop(ID)
-        print(analysis_data)
-        AAA=analysis_data
         collection.update_one(filter={"id":question_id},update={"$set":analysis_data})
 
 
@@ -175,7 +195,7 @@ def get_unresolved_url_count(criteria):
 def get_fetched_false_count(criteria):
     with MongoClient(MONGO_HOST, MONGO_PORT) as client:
         db = client[DB]
-        collection = db[QUESTION_URL]
+        collection = db[QUESTION_DETAILS]
         criteria[FETCHED] = False
         return collection.count(criteria)
 
