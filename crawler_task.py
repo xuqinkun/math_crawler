@@ -206,10 +206,10 @@ def save_questions(thread_name, img_list, question_list, start_time, end_time):
     update_url_resolved(question_list)
     question_list.clear()
     if len(img_list) != 0:
-        if not db_client.insert_many(COLLECTION_IMAEG, img_list):
+        if not db_client.insert_many(COLLECTION_IMAGE, img_list):
             print("Thread[%s] inserted batch images failed. Try to insert one by one", thread_name)
             for img_src in img_list:
-                if not db_client.insert_one(COLLECTION_IMAEG, img_src):
+                if not db_client.insert_one(COLLECTION_IMAGE, img_src):
                     print("Thread[%s] inserted image[uuid=%s] failed. Try to insert one by one" % (thread_name, img_src[UUID]))
         img_list.clear()
 
@@ -324,7 +324,7 @@ class Task(Thread):
             offset = last + BATCH_SIZE * self.id
             url_list = db_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
             print("Thread[%s] start to fetch [%d] questions" % (self.name, BATCH_SIZE))
-            # url_list = db_client.load_url_by_id(['1901554'])
+            # url_list = db_client.load_url_by_id(['1997544'])
             count += len(url_list)
             last += BATCH_SIZE * self.thread_nums
             if len(url_list) == 0:
@@ -352,9 +352,12 @@ class Task(Thread):
                         option_sequence, option_img_list = resolve_options(options_tag)
 
                         # Resolve analysis
-                        analyze_tag = soup.select_one("div[class=paper-analyize-wrap]")
-                        if not validate_tag(analyze_tag, question_url):  # Skip tag which resolved failed
-                            continue
+                        analyze_tag = soup.select_one("div[class=paper-analyize]")
+                        if analyze_tag is None:
+                            analyze_tag = soup.select_one("div[class=paper-analyize-wrap]")
+                            if not validate_tag(analyze_tag, question_url):  # Skip tag which resolved failed
+                                continue
+                            analyze_tag = analyze_tag.contents[0]
                         analyze_text = analyze_tag.text
                         analysis_sequence = {}
                         analysis_img_list = []
@@ -369,7 +372,7 @@ class Task(Thread):
                                 warn = False
                             analysis_sequence[FETCHED] = False
                         else:
-                            analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag.contents[0])
+                            analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag)
                             analysis_sequence[FETCHED] = True
 
                         message_tag = soup.select_one("div[class=paper-message-attr]")
