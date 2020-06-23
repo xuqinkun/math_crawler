@@ -238,7 +238,7 @@ def validate_tag(tag, url):
 
 
 class Task(Thread):
-    def __init__(self, thread_id=0, thread_nums=1, question_type='',criteria=None,
+    def __init__(self, thread_id=0, thread_nums=1, question_type='', criteria=None,
                  account=None, use_gui=False, max_size=1000, phantomjs_path=''):
         """
         :param thread_id
@@ -261,12 +261,12 @@ class Task(Thread):
 
     def run(self):
         if self.type == SINGLE_CHOICE:
-            criteria = {"type": self.type}
-            if self.criteria is not None:
-                criteria.update(self.criteria)
+            # criteria = {"type": self.type}
+            # if self.criteria is not None:
+            #     criteria.update(self.criteria)
             if self.refresh_cookies():
                 print("Login succeed!")
-            self.resolve_single(criteria)
+            self.resolve_single(self.criteria)
 
     def refresh_cookies(self):
         """
@@ -284,9 +284,8 @@ class Task(Thread):
         cookies = db_client.load_cookies(self.account[PHONE])
         if not is_valid_cookies(cookies):
             if not self.use_gui:
-                options = Options()
-                options.add_argument('-headless')
                 driver = webdriver.PhantomJS(executable_path=self.phantomjs_path)
+                # driver = webdriver.Chrome(executable_path='D:\\Tools\\ChromeDriver\\chromedriver.exe')
                 driver.get(login_url)
                 time.sleep(1)
                 driver.maximize_window()
@@ -324,7 +323,7 @@ class Task(Thread):
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
             url_list = db_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
-            print("Thread[%s] start to fetch [%d] questions" %(self.name, BATCH_SIZE))
+            print("Thread[%s] start to fetch [%d] questions" % (self.name, BATCH_SIZE))
             # url_list = db_client.load_url_by_id(['1901554'])
             count += len(url_list)
             last += BATCH_SIZE * self.thread_nums
@@ -332,8 +331,8 @@ class Task(Thread):
                 break
             for item in url_list:
                 if not item[RESOLVED]:  # False indicates current url has not been resolved yet
+                    question_url = item['url']
                     try:
-                        question_url = item['url']
                         resp = requests.get(url=question_url, headers=self.headers)
                         if resp.status_code != requests.codes.ok:
                             print("Resolved failed for url[%s] status_code[%d]" % (question_url, resp.status_code))
