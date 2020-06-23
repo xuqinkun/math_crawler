@@ -153,11 +153,12 @@ def load_img_src():
         return png_dict
 
 
-def get_unresolved_url_count():
+def get_unresolved_url_count(criteria):
     with MongoClient(MONGO_HOST, MONGO_PORT) as client:
         db = client[DB]
         collection = db[QUESTION_URL]
-        return collection.count({RESOLVED: False})
+        criteria[RESOLVED] = False
+        return collection.count(criteria)
 
 
 def get_accounts():
