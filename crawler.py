@@ -15,7 +15,7 @@ if __name__ == '__main__':
         exit(1)
     phantomjs_path = sys.argv[1]
     accounts = mongo_client.get_accounts()
-    criteria = {"class.class1": {"$nin": ["图形的性质", "图形的变换"]}, "type": SINGLE_CHOICE}
+    criteria = {"class.class1": {"$nin": ["图形的性质", "图形的变换"]}, "type": SYNTHESIS}
     count = mongo_client.get_unresolved_url_count(criteria)
     thread_nums = len(accounts)
     batch_size = int(count / thread_nums) + len(accounts)
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     # thread_nums = len(accounts)
     thread_nums = 1
     for account in accounts:
-        t = Task(id, thread_nums, COMPUTATION, criteria, account, False, batch_size, phantomjs_path)
+        t = Task(id, thread_nums, SYNTHESIS, criteria, account, False, batch_size, phantomjs_path)
         t.start()
         id += 1
         break

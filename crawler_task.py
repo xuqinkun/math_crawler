@@ -43,7 +43,7 @@ def resolve_img_tag(tag=Tag(name="")):
     if img_src.find(MATHML_TO_IMAGE) != -1:  # URL contains MathML then just resolve it
         return {MATH_ML: resolve_mathml(img_src)}, {}
     elif img_src.find(IMAGE) != -1:  # Simple url for png
-        print(tag)
+        # print(tag)
         uuid, img_format = get_uuid(img_src)
         return {img_format: uuid}, {UUID: uuid, SRC: img_src, RESOLVED: False}
     else:
@@ -80,6 +80,50 @@ def resolve_tag(tag=Tag(name='')):
                 url_map += temp_map
     return plain_text, url_map
 
+def resolve_sub_question(tag=Tag(name='')):
+    """
+        解析包含有图片和文本的标签，将标签解析为一个列表，每个元素为字典元素 {type: value}
+        type: 文本类型 [plain_text, png, mathml, latex], value: 对应的值
+    :param tag: Page element
+    :return: Text, Image list
+    """
+    subtags = tag.select("div[class=paper-subquestion-title]")
+    plain_text = []
+    url_map = []
+    for child in subtags:  # Traverse the subquestions of tag
+        if isinstance(child, NavigableString):  # NavigableString is a plain text, just append to plain_text
+            plain_text.append({PLAIN_TEXT: str(child)})
+        elif child.name == 'br':  # Tag <br>, append a new line
+            pass
+        elif child.name == 'img':  # Tag <img>, append the attribute 'src'
+            png, image = resolve_img_tag(child)
+            plain_text.append(png)
+            if len(image) != 0:
+                url_map.append(image)
+            text, temp_map = resolve_tag(child)  # Call resolve_tag recursively
+            plain_text += text
+            if len(temp_map) != 0:
+                url_map += temp_map
+        elif isinstance(child, Tag):  # If current child is a tag, call resolve_tag recursively
+            text, temp_map = resolve_tag(child)
+            plain_text += text
+            if len(temp_map) != 0:
+                url_map += temp_map
+    return plain_text, url_map
+
+def resolve_sub_analysis(tag=Tag(name='')):
+    subtags = tag.select("div[class=paper-subquestion-answer]")
+    plain_text = {"答案":[]}
+    url_map = []
+    for child in subtags:  # Traverse the children of tag
+        img_src = []
+        pair, temp = resolve_single_tag(child.contents[0])
+        key = pair[PLAIN_TEXT]
+        key = str(key).replace('【', '').replace('】', '')
+        value, img_src = resolve_tag(child.contents[1])
+        plain_text[key] += value
+        url_map += img_src
+    return plain_text,url_map
 
 def resolve_single_tag(tag=Tag(name='')):
     """
@@ -279,6 +323,12 @@ class Task(Thread):
                 criteria.update(self.criteria)
             # self.refresh_cookies()
             self.resolve_computation(criteria) 
+        elif self.type == SYNTHESIS:
+            criteria = {"type": self.type}
+            if self.criteria is not None:
+                criteria.update(self.criteria)
+            # self.refresh_cookies()
+            self.resolve_synthesis(criteria)
 
 
     def refresh_cookies(self):
@@ -526,7 +576,7 @@ class Task(Thread):
                             print("Resolved failed for url[%s] status_code[%d]" % (question_url, resp.status_code))
                             continue
                         soup = BeautifulSoup(resp.text, 'html.parser')
-
+                        
                         # Resolve title
                         title_tag = soup.select_one("div[class=paper-question-title]")
                         if not validate_tag(title_tag, question_url):  # Skip tag which resolved failed
@@ -542,7 +592,7 @@ class Task(Thread):
                         analysis_img_list = []
                         if utils.contains_str(analyze_text, '显示答案解析'):
                             print("Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
-                            exit()
+                            # exit()
                             if self.refresh_cookies():
                                 print("Thread[%s] refresh cookies success!" % self.name)
                             analysis_sequence[FETCHED] = False
@@ -583,6 +633,104 @@ class Task(Thread):
             break
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
               % (self.name, count, time.time() - begin_time))
+
+    def resolve_synthesis(self, criteria):
+        last = 0
+        img_list = []
+        question_list = []
+        warn = True
+        start_time = time.time()
+        begin_time = start_time
+        count = 0
+        while count < self.max_size:
+            offset = last + BATCH_SIZE * self.id
+            url_list = db_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
+            print("Thread[%s] start to fetch [%d] questions" %(self.name, BATCH_SIZE))
+            # url_list = ["http://www.51jiaoxi.com/question-692577.html"]
+            # url_list = db_client.load_url_by_id(['692577'])
+            # print(url_list)
+            count += len(url_list)
+            last += BATCH_SIZE * self.thread_nums
+            if len(url_list) == 0:
+                break
+            for item in url_list:
+                if not item[RESOLVED]:  # False indicates current url has not been resolved yet
+                    try:
+                        question_url = item['url']
+                        resp = requests.get(url=question_url, headers=self.headers)
+                        if resp.status_code != requests.codes.ok:
+                            print("Resolved failed for url[%s] status_code[%d]" % (question_url, resp.status_code))
+                            continue
+                        # print(resp)
+                        soup = BeautifulSoup(resp.text, 'html.parser')
+                        
+                        # Resolve title
+                        title_tag = soup.select_one("div[class=paper-question-title]")
+                        if not validate_tag(title_tag, question_url):  # Skip tag which resolved failed
+                            continue
+                        title_sequence, title_img_list = resolve_tag(title_tag)
+
+                        # Resolve sub_title
+                        subtitle_tag = soup.select_one("ol[class=paper-subquestion]")
+                        if not validate_tag(subtitle_tag, question_url):  # Skip tag which resolved failed
+                            continue
+                        subtitle_sequence, subtitle_img_list = resolve_sub_question(subtitle_tag)
+                        # print(subtitle_sequence)
+                        # Resolve analysis
+                        analyze_tag = soup.select_one("div[class=paper-analyize-wrap]")
+                        if not validate_tag(analyze_tag, question_url):  # Skip tag which resolved failed
+                            continue
+                        analyze_text = analyze_tag.text
+                        analysis_sequence = {}
+                        analysis_img_list = []
+                        if utils.contains_str(analyze_text, '显示答案解析'):
+                            print("Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
+                            # exit()
+                            if self.refresh_cookies():
+                                print("Thread[%s] refresh cookies success!" % self.name)
+                            analysis_sequence[FETCHED] = False
+                        elif utils.contains_str(analyze_text, '限制'):
+                            if warn:
+                                print("Sorry! Thread[%s] has run out of the accessing times for analysis!" % self.name)
+                                warn = False
+                            analysis_sequence[FETCHED] = False
+                        else:
+                            analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag.contents[0])
+                            if len(subtitle_sequence) > 0:
+                                subtitle_answer_squence, subtitle_answer_img_list = resolve_sub_analysis(subtitle_tag)
+                                # print(subtitle_answer_squence)
+                                analysis_sequence.update(subtitle_answer_squence)
+                            analysis_sequence[FETCHED] = True
+
+                        message_tag = soup.select_one("div[class=paper-message-attr]")
+                        question_message = resolve_message(message_tag)
+
+                        question_data = {ID: item[ID], TITLE: title_sequence,SUBTITLE:subtitle_sequence}
+                        question_data.update(question_message)
+                        question_data.update(analysis_sequence)
+                        question_list.append(question_data)
+
+                        # 所有标签解析成功后才把图片存入数据库
+                        # if len(title_img_list) != 0:
+                        #     img_list += title_img_list
+                        # if len(option_img_list) != 0:
+                        #     img_list += option_img_list
+                        if len(analysis_img_list) != 0:
+                            img_list += analysis_img_list
+
+                    except Exception as ex:  # 捕获所有异常，出错后单独处理，避免中断
+                        print(ex)
+                        print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item[ID], question_url))
+                    if len(question_list) == QUESTION_BATCH_SIZE:
+                        save_questions(self.name, img_list, question_list, start_time, time.time())
+                        start_time = time.time()
+            if len(question_list) > 0:
+                save_questions(self.name, img_list, question_list, start_time, time.time())
+                # print(self.name, img_list, question_list, start_time, time.time())
+            break
+        print("Thread[%s] finished resolving [%d] questions taken %.2fs"
+              % (self.name, count, time.time() - begin_time))
+    
 if __name__ == '__main__':
     options = Options()
     options.headless = True

@@ -1,6 +1,6 @@
 COOKIE = "Cookie"
 COLLECTION_URL = 'question_url'
-BATCH_SIZE = 1
+BATCH_SIZE = 10
 PLAIN_TEXT = 'plain_text'
 LATEX = 'latex'
 IMAGE = 'img'
@@ -28,15 +28,16 @@ HEADERS = {
     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) " +
                   "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36",
-    "Cookie": "paperId=0; Hm_lvt_e933c796aa676cbb0afa2bf2bee228fd=1592223046; _ga=GA1.2.1029288451.1592223046; _gid=GA1.2.312840864.1592811871; Hm_lpvt_e933c796aa676cbb0afa2bf2bee228fd=1592829732; _gat_gtag_UA_137517687_1=1; wechat_flag=eyJpdiI6Ijg5dktYV3d0Nkk4K29rTVFOMXFET3c9PSIsInZhbHVlIjoiZFRzS05NUTBHU1FMbUVEbkNPYWN4K255Z0hkMHR3NjJqXC9McUZCWEtzRzJWOTh1Yit4TVFkR1BKSGNLNUJiRlwvIiwibWFjIjoiNzNlM2YzNjhlOWMyYWIzYTk1MWI1M2ZkNGRjZWU2YWYzYWE0YmNmNTQxZWZiZTJjZmIzM2YxM2I4NjdkZjY5YiJ9; XSRF-TOKEN=eyJpdiI6Im4wdk9mdmZOZzRmeCtWTklVcDg0alE9PSIsInZhbHVlIjoic3A4WEttVlhwcVpUQUQzQ0RtXC9zYkNCMGx0SUkxNjBQQkd3bk1MM3k4K2RjcGM4ZXIzNlEyRXhqXC90Z2tWOEtGIiwibWFjIjoiNWUwNjNjYWViMzIyOWVmNzhjYWJlYWMxZWExOWM0YWY3MTdkNzk5NzY3ZTY2Y2VlZGIxMzc2MTIwOWRhYWEzNCJ9; _session=eyJpdiI6IitYbWFlbnJcLzRZS3o3Q3RtT1ZcL0hcL2c9PSIsInZhbHVlIjoiU0VXZUlXVlwvMnc5QkNGTWxnS1M1eVVLZThnbTEzeUJPSUdWTmJoZDYzS0RUdnlSOEtmb3NaYnBNd001NDROZU8iLCJtYWMiOiIzN2QzODE0YTliZDdjZGFhYjQ2NzI3NTY1YmNhZTBlMTQwODIzMzk4YmRhN2ZjZWZjZmE3YmU3MzJlODNmYWQ5In0%3D"
-}
+    }
 login_url = r'http://www.51jiaoxi.com/login'
 SINGLE_CHOICE = '单选题'
 FILL_BLANKS = '填空题'
 COMPUTATION = '计算题'
+SYNTHESIS = '综合题'
 ID = "id"
 OPTIONS = "options"
 TITLE = "title"
+SUBTITLE = "subtitle"
 
 LOCAL_IMG_DIR = "./LocalImages/"
 # ------------------------------------OCR parameters-------------------------------------------
