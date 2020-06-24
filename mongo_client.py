@@ -60,6 +60,17 @@ def find_url_by_ids(ids=[]):
             data.append(doc)
         return data
 
+# Load $num urls from the start item
+def load_unresolved_url(num=0, start=0, criteria={}):
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client[DB]
+        collection = db[COLLECTION_URL]
+        criteria[RESOLVED] = False
+        docs = collection.find(criteria).skip(start).limit(num)
+        data = []
+        for doc in docs:
+            data.append(doc)
+        return data
 
 def load_url_by_id(ids=[]):
     with MongoClient(MONGO_HOST, MONGO_PORT) as client:
@@ -202,10 +213,12 @@ def get_accounts():
     account_list = []
     with MongoClient(MONGO_HOST, MONGO_PORT) as client:
         collection = client.math_questions.account
+        print(list(collection.find()))
         for account in list(collection.find()):
             phone = account['phone']
             pwd = utils.rsa_decrypt(account['password'])
             account_list.append({'phone': phone, 'password': pwd})
+    print(account_list)
     return account_list
 
 

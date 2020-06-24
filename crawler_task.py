@@ -9,6 +9,7 @@ from bs4.element import *
 from selenium import webdriver
 
 import mongo_client as db_client
+from mongo_client import *
 import utils
 from config import *
 

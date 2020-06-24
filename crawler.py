@@ -17,6 +17,8 @@ def str2type(s="0"):
         return "填空题"
     elif s == "2":
         return "计算题"
+    elif s == "3":
+        return "综合题"
     return None
 
 
@@ -42,7 +44,9 @@ if __name__ == '__main__':
     analysis_only = False
     if len(sys.argv) > 3:
         analysis_only = str2bool(sys.argv[3])
+    print(analysis_only)
     accounts = mongo_client.get_accounts()
+    print(accounts)
     criteria = {"class.class1": {"$nin": ["图形的性质", "图形的变换"]}, "type": question_type}
     if analysis_only:
         print("Only fetch analysis for (%s)" % question_type)
@@ -58,7 +62,9 @@ if __name__ == '__main__':
     # Exclude: $nin, include: $in
     thread_id = 0
     for account in accounts:
+        print("getting into thread")
         t = Task(thread_id, thread_nums, question_type, criteria, account,
                  False, batch_size, phantomjs_path, analysis_only)
         t.start()
         thread_id += 1
+        # break
