@@ -12,6 +12,7 @@ import mongo_client as db_client
 import utils
 from config import *
 
+
 def resolve_mathml(src=''):
     """
     Convert the img src to MathML
@@ -241,15 +242,22 @@ def update_url_resolved(question_list):
     db_client.update_url_resolved(url_id_list)
 
 
-def save_questions(thread_name, img_list, question_list, start_time, end_time):
+def save_questions(thread_name, img_list, question_list, start_time, end_time, analysis_only=False):
     print("Thread[%s] save %d questions to DB takes %.2fs" % (thread_name, len(question_list), end_time - start_time))
-    if not db_client.insert_many(QUESTION_DETAILS, question_list):
-        print("Thread[%s] insert batch questions failed. Try to insert one by one", thread_name)
-        for question in question_list:
-            if not db_client.insert_one(QUESTION_DETAILS, question):
-                print("Thread[%s] insert question[id=%s] failed. Try to insert one by one" % (thread_name, question[ID]))
-    update_url_resolved(question_list)
-    question_list.clear()
+    if analysis_only:
+        for analysis_data in question_list:
+            db_client.updata_analysis(analysis_data)
+        question_list.clear()
+    else:
+        if not db_client.insert_many(QUESTION_DETAILS, question_list):
+            print("Thread[%s] insert batch questions failed. Try to insert one by one", thread_name)
+            for question in question_list:
+                if not db_client.insert_one(QUESTION_DETAILS, question):
+                    print("Thread[%s] insert question[id=%s] failed. Try to insert one by one" % (
+                    thread_name, question[ID]))
+        update_url_resolved(question_list)
+        question_list.clear()
+
     if len(img_list) != 0:
         if not db_client.insert_many(COLLECTION_IMAGE, img_list):
             print("Thread[%s] inserted batch images failed. Try to insert one by one", thread_name)
@@ -284,7 +292,7 @@ def validate_tag(tag, url):
 
 class Task(Thread):
     def __init__(self, thread_id=0, thread_nums=1, question_type='', criteria=None,
-                 account=None, use_gui=False, max_size=1000, phantomjs_path=''):
+                 account=None, use_gui=False, max_size=1000, phantomjs_path='', analysis_only=False):
         """
         :param thread_id
         :param question_type:
@@ -303,32 +311,57 @@ class Task(Thread):
         self.criteria = criteria
         self.headers = HEADERS.copy()
         self.phantomjs_path = phantomjs_path
+        self.analysis_only = analysis_only
 
     def run(self):
         if self.type == SINGLE_CHOICE:
             criteria = {"type": self.type}
             if self.criteria is not None:
                 criteria.update(self.criteria)
-            self.refresh_cookies()
-            self.resolve_single(criteria)
+            if self.refresh_cookies():
+                print("Login succeed!")
+            if self.analysis_only:
+                self.criteria[FETCHED] = False
+                self.only_for_analysis(self.criteria)
+            else:
+                self.criteria[RESOLVED] = False
+                self.resolve_single(self.criteria)
         elif self.type == FILL_BLANKS:
             criteria = {"type": self.type}
             if self.criteria is not None:
                 criteria.update(self.criteria)
-            # self.refresh_cookies()
-            self.resolve_blank(criteria)
+            if self.refresh_cookies():
+                print("Login succeed!")
+            if self.analysis_only:
+                self.criteria[FETCHED] = False
+                self.only_for_analysis(self.criteria)
+            else:
+                self.criteria[RESOLVED] = False
+                self.resolve_blank(self.criteria)
         elif self.type == COMPUTATION:
             criteria = {"type": self.type}
             if self.criteria is not None:
                 criteria.update(self.criteria)
-            # self.refresh_cookies()
-            self.resolve_computation(criteria) 
+            if self.refresh_cookies():
+                print("Login succeed!")
+            if self.analysis_only:
+                self.criteria[FETCHED] = False
+                self.only_for_analysis(self.criteria)
+            else:
+                self.criteria[RESOLVED] = False
+                self.resolve_computation(self.criteria)
         elif self.type == SYNTHESIS:
             criteria = {"type": self.type}
             if self.criteria is not None:
                 criteria.update(self.criteria)
-            # self.refresh_cookies()
-            self.resolve_synthesis(criteria)
+            if self.refresh_cookies():
+                print("Login succeed!")
+            if self.analysis_only:
+                self.criteria[FETCHED] = False
+                self.only_for_analysis(self.criteria)
+            else:
+                self.criteria[RESOLVED] = False
+                self.resolve_synthesis(self.criteria)
 
 
     def refresh_cookies(self):
@@ -385,9 +418,9 @@ class Task(Thread):
         count = 0
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
-            url_list = db_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
+            url_list = db_client.find(QUESTION_URL, BATCH_SIZE, offset, criteria)
             print("Thread[%s] start to fetch [%d] questions" % (self.name, BATCH_SIZE))
-            # url_list = db_client.load_url_by_id(['1901554'])
+            # url_list = db_client.load_url_by_id(['1997544'])
             count += len(url_list)
             last += BATCH_SIZE * self.thread_nums
             if len(url_list) == 0:
@@ -415,14 +448,18 @@ class Task(Thread):
                         option_sequence, option_img_list = resolve_options(options_tag)
 
                         # Resolve analysis
-                        analyze_tag = soup.select_one("div[class=paper-analyize-wrap]")
-                        if not validate_tag(analyze_tag, question_url):  # Skip tag which resolved failed
-                            continue
+                        analyze_tag = soup.select_one("div[class=paper-analyize]")
+                        if analyze_tag is None:
+                            analyze_tag = soup.select_one("div[class=paper-analyize-wrap]")
+                            if not validate_tag(analyze_tag, question_url):  # Skip tag which resolved failed
+                                continue
+                            analyze_tag = analyze_tag.contents[0]
                         analyze_text = analyze_tag.text
                         analysis_sequence = {}
                         analysis_img_list = []
                         if utils.contains_str(analyze_text, '显示答案解析'):
-                            print("Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
+                            print(
+                                "Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
                             if self.refresh_cookies():
                                 print("Thread[%s] refresh cookies success!" % self.name)
                             analysis_sequence[FETCHED] = False
@@ -432,7 +469,7 @@ class Task(Thread):
                                 warn = False
                             analysis_sequence[FETCHED] = False
                         else:
-                            analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag.contents[0])
+                            analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag)
                             analysis_sequence[FETCHED] = True
 
                         message_tag = soup.select_one("div[class=paper-message-attr]")
@@ -717,7 +754,6 @@ class Task(Thread):
                         #     img_list += option_img_list
                         if len(analysis_img_list) != 0:
                             img_list += analysis_img_list
-
                     except Exception as ex:  # 捕获所有异常，出错后单独处理，避免中断
                         print(ex)
                         print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item[ID], question_url))
@@ -731,6 +767,81 @@ class Task(Thread):
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
               % (self.name, count, time.time() - begin_time))
     
+    def only_for_analysis(self, criteria):
+        last = 0
+        img_list = []
+        question_list = []
+        warn = True
+        start_time = time.time()
+        begin_time = start_time
+        count = 0
+        while count < self.max_size:
+            offset = last + BATCH_SIZE * self.id
+            unfetched_data = db_client.find(QUESTION_DETAILS, BATCH_SIZE, offset, criteria)
+            id_list = [item['id'] for item in unfetched_data]
+
+            url_list = db_client.find_url_by_ids(id_list)
+            print("Thread[%s] start to fetch [%d] questions' analysis" % (self.name, BATCH_SIZE))
+            # url_list = db_client.load_url_by_id(['1997544'])
+            count += len(url_list)
+            last += BATCH_SIZE * self.thread_nums
+            if len(url_list) == 0:
+                break
+            for item in url_list:
+                # if not item[FETCHED]:  # False indicates current url has not been resolved yet
+                question_url = item['url']
+                try:
+                    resp = requests.get(url=question_url, headers=self.headers)
+                    if resp.status_code != requests.codes.ok:
+                        print("Resolved failed for url[%s] status_code[%d]" % (question_url, resp.status_code))
+                        continue
+                    soup = BeautifulSoup(resp.text, 'html.parser')
+
+                    # Resolve analysis
+                    analyze_tag = soup.select_one("div[class=paper-analyize]")
+                    if analyze_tag is None:
+                        analyze_tag = soup.select_one("div[class=paper-analyize-wrap]")
+                        if not validate_tag(analyze_tag, question_url):  # Skip tag which resolved failed
+                            continue
+                        analyze_tag = analyze_tag.contents[0]
+                    analyze_text = analyze_tag.text
+                    analysis_sequence = {}
+                    analysis_img_list = []
+                    if utils.contains_str(analyze_text, '显示答案解析'):
+                        print(
+                            "Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
+                        if self.refresh_cookies():
+                            print("Thread[%s] refresh cookies success!" % self.name)
+                        analysis_sequence[FETCHED] = False
+                    elif utils.contains_str(analyze_text, '限制'):
+                        if warn:
+                            print("Sorry! Thread[%s] has run out of the accessing times for analysis!" % self.name)
+                            warn = False
+                        if len(question_list) > 0:
+                            save_questions(self.name, img_list, question_list, start_time, time.time(), True)
+                        return
+                    else:
+                        analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag)
+                        analysis_sequence[FETCHED] = True
+
+                    question_data = {ID: item[ID]}
+                    question_data.update(analysis_sequence)
+                    question_list.append(question_data)
+
+                    if len(analysis_img_list) != 0:
+                        img_list += analysis_img_list
+
+                except Exception as ex:  # 捕获所有异常，出错后单独处理，避免中断
+                    print(ex)
+                    print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item[ID], question_url))
+                if len(question_list) == QUESTION_BATCH_SIZE:
+                    save_questions(self.name, img_list, question_list, start_time, time.time(), True)
+                    start_time = time.time()
+            if len(question_list) > 0:
+                save_questions(self.name, img_list, question_list, start_time, time.time(), True)
+        print("Thread[%s] finished resolving [%d] questions taken %.2fs"
+              % (self.name, count, time.time() - begin_time))
+
 if __name__ == '__main__':
     options = Options()
     options.headless = True

@@ -39,12 +39,22 @@ def insert_many(collection_name='', docs=[]):
 
 
 # Load $num urls from the start item
-def load_unresolved_url(num=0, start=0, criteria={}):
+def find(collection_name='', num=0, start=0, criteria={}):
     with MongoClient(MONGO_HOST, MONGO_PORT) as client:
         db = client[DB]
-        collection = db[COLLECTION_URL]
-        criteria[RESOLVED] = False
+        collection = db[collection_name]
         docs = collection.find(criteria).skip(start).limit(num)
+        data = []
+        for doc in docs:
+            data.append(doc)
+        return data
+
+
+def find_url_by_ids(ids=[]):
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client[DB]
+        collection = db[QUESTION_URL]
+        docs = collection.find({ID: {"$in": ids}})
         data = []
         for doc in docs:
             data.append(doc)
@@ -101,6 +111,15 @@ def update_img_info(img_text_list={}):
                 count = count + 1
         print("%d images text updated "% count)
     return True
+
+
+def updata_analysis(analysis_data={}):
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client[DB]
+        collection = db[QUESTION_DETAILS]
+        question_id = analysis_data[ID]
+        analysis_data.pop(ID)
+        collection.update_one(filter={"id": question_id}, update={"$set": analysis_data})
 
 
 def resolve_png_keys(docs):
@@ -165,6 +184,15 @@ def get_unresolved_url_count(criteria):
         collection = db[QUESTION_URL]
         criteria[RESOLVED] = False
         return collection.count(criteria)
+
+
+def get_fetched_false_count(criteria):
+    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
+        db = client[DB]
+        collection = db[QUESTION_DETAILS]
+        criteria[FETCHED] = False
+        return collection.count(criteria)
+
 
 def get_accounts():
     """
