@@ -1,6 +1,6 @@
 COOKIE = "Cookie"
 COLLECTION_URL = 'question_url'
-BATCH_SIZE = 1000
+BATCH_SIZE = 100
 PLAIN_TEXT = 'plain_text'
 LATEX = 'latex'
 IMAGE = 'img'
@@ -9,7 +9,7 @@ COLLECTION_IMAGE = "image"
 RESOLVED = "resolved"
 login_url = 'http://www.51jiaoxi.com/login'
 MONGO_HOST = 'localhost'
-MONGO_PORT = 27017
+MONGO_PORT = 11118
 DB = 'math_questions'
 ACCOUNT = "account"
 COOKIES = "cookies"
@@ -40,3 +40,6 @@ Baidu_API_KEY = "jcqLdnhT3Ob4jflDqboKoG1z"
 Baidu_SECRET_KEY = "KAAcqOuXbtDPVgdH0NPXtGj6LZdPiO5i"
 #OCR batch_size
 OCR_BATCH_SIZE = 300
+
+# question_type
+SINGLE_CHOICE = "单选题"

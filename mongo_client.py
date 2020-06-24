@@ -39,22 +39,10 @@ def insert_many(collection_name='', docs=[]):
 
 
 # Load $num urls from the start item
-def load_unresolved_url(num=0, start=0, criteria={}):
+def find(collection_name='', num=0, start=0, criteria={}):
     with MongoClient(MONGO_HOST, MONGO_PORT) as client:
         db = client[DB]
-        collection = db[COLLECTION_URL]
-        criteria[RESOLVED] = False
-        docs = collection.find(criteria).skip(start).limit(num)
-        data = []
-        for doc in docs:
-            data.append(doc)
-        return data
-
-def load_unfetched_data(num=0,start=0,criteria={}):
-    with MongoClient(MONGO_HOST, MONGO_PORT) as client:
-        db = client[DB]
-        collection = db[QUESTION_DETAILS]
-        criteria[FETCHED] = False
+        collection = db[collection_name]
         docs = collection.find(criteria).skip(start).limit(num)
         data = []
         for doc in docs:
@@ -67,7 +55,7 @@ def find_url_by_ids(ids=[]):
         db = client[DB]
         collection = db[QUESTION_URL]
         docs = collection.find({ID: {"$in": ids}})
-        data=[]
+        data = []
         for doc in docs:
             data.append(doc)
         return data
@@ -129,9 +117,9 @@ def updata_analysis(analysis_data={}):
     with MongoClient(MONGO_HOST, MONGO_PORT) as client:
         db = client[DB]
         collection = db[QUESTION_DETAILS]
-        question_id=analysis_data[ID]
+        question_id = analysis_data[ID]
         analysis_data.pop(ID)
-        collection.update_one(filter={"id":question_id},update={"$set":analysis_data})
+        collection.update_one(filter={"id": question_id}, update={"$set": analysis_data})
 
 
 def resolve_png_keys(docs):

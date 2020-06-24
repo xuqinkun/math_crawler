@@ -5,13 +5,14 @@ from config import *
 from crawler_task import Task
 
 
+
 def str2bool(s):
     return s in ["true", "True", "TRUE"]
 
 
 def str2type(s="0"):
-    if s == "0":
-        return "单选题"
+    if s == '0':
+        return SINGLE_CHOICE
     elif s == "1":
         return "填空题"
     elif s == "2":

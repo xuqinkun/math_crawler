@@ -271,14 +271,13 @@ class Task(Thread):
 
     def run(self):
         if self.type == SINGLE_CHOICE:
-            # criteria = {"type": self.type}
-            # if self.criteria is not None:
-            #     criteria.update(self.criteria)
             if self.refresh_cookies():
                 print("Login succeed!")
             if self.analysis_only:
+                self.criteria[FETCHED] = False
                 self.only_for_analysis(self.criteria)
             else:
+                self.criteria[RESOLVED] = False
                 self.resolve_single(self.criteria)
 
     def refresh_cookies(self):
@@ -335,7 +334,7 @@ class Task(Thread):
         count = 0
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
-            url_list = db_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
+            url_list = db_client.find(QUESTION_URL, BATCH_SIZE, offset, criteria)
             print("Thread[%s] start to fetch [%d] questions" % (self.name, BATCH_SIZE))
             # url_list = db_client.load_url_by_id(['1997544'])
             count += len(url_list)
@@ -426,11 +425,11 @@ class Task(Thread):
         count = 0
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
-            unfetched_data = db_client.load_unfetched_data(BATCH_SIZE, offset, criteria)
+            unfetched_data = db_client.find(QUESTION_DETAILS, BATCH_SIZE, offset, criteria)
             id_list = [item['id'] for item in unfetched_data]
 
             url_list = db_client.find_url_by_ids(id_list)
-            print("Thread[%s] start to fetch [%d] questions" % (self.name, BATCH_SIZE))
+            print("Thread[%s] start to fetch [%d] questions' analysis" % (self.name, BATCH_SIZE))
             # url_list = db_client.load_url_by_id(['1997544'])
             count += len(url_list)
             last += BATCH_SIZE * self.thread_nums
