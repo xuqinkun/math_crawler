@@ -1,6 +1,6 @@
 import json
 
-import mongo_client
+from mongo_client import MongoDriver
 import utils
 from config import *
 
@@ -8,7 +8,7 @@ from config import *
 path = r'keys/accounts.json'
 
 
-def insert_accounts():
+def insert_accounts(mongo_host, mongo_port):
     f = open(path, 'r')
     accounts_list = json.load(f)
     accounts = []
@@ -17,10 +17,5 @@ def insert_accounts():
         phone = account['phone']
         pwd = utils.rsa_encrypt(account['password'])
         accounts.append({'phone': phone, 'password': pwd})
+    mongo_client = MongoDriver(mongo_host, mongo_port)
     mongo_client.insert_many(ACCOUNT, accounts)
-
-
-if __name__ == "__main__":
-    insert_accounts()
-    id_list = mongo_client.get_accounts()
-    print(id_list)

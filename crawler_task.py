@@ -8,8 +8,6 @@ from bs4 import BeautifulSoup
 from bs4.element import *
 from selenium import webdriver
 
-import mongo_client as db_client
-from mongo_client import *
 import utils
 from config import *
 
@@ -82,6 +80,7 @@ def resolve_tag(tag=Tag(name='')):
                 url_map += temp_map
     return plain_text, url_map
 
+
 def resolve_sub_question(tag=Tag(name='')):
     """
         解析包含有图片和文本的标签，将标签解析为一个列表，每个元素为字典元素 {type: value}
@@ -113,6 +112,7 @@ def resolve_sub_question(tag=Tag(name='')):
                 url_map += temp_map
     return plain_text, url_map
 
+
 def resolve_sub_analysis(tag=Tag(name='')):
     subtags = tag.select("div[class=paper-subquestion-answer]")
     plain_text = {"答案":[]}
@@ -127,6 +127,7 @@ def resolve_sub_analysis(tag=Tag(name='')):
         url_map += img_src
     return plain_text,url_map
 
+
 def resolve_single_tag(tag=Tag(name='')):
     """
     解析只包含单个子标签的的标签
@@ -136,7 +137,7 @@ def resolve_single_tag(tag=Tag(name='')):
     if tag.name == 'img':
         return resolve_img_tag(tag)
     elif isinstance(tag, NavigableString):
-        return {PLAIN_TEXT: tag.text}, {}
+        return {PLAIN_TEXT: tag}, {}
     else:
         for child in tag.children:
             if isinstance(child, NavigableString):
@@ -215,7 +216,7 @@ def resolve_analysis(tag=Tag(name='')):
     """
     analysis = {}
     src_list = []
-    for item in tag.contents[0]:
+    for item in tag.contents:
         pair, temp = resolve_single_tag(item.contents[0])
         key = pair[PLAIN_TEXT]
         key = str(key).replace('【', '').replace('】', '')
@@ -234,38 +235,6 @@ def resolve_message(message_tag=Tag(name='')):
     message["level"] = spans[2].text
     message["subject"] = spans[3].text
     return message
-
-
-def update_url_resolved(question_list):
-    url_id_list = []
-    for q in question_list:
-        url_id_list.append(q[ID])
-    db_client.update_url_resolved(url_id_list)
-
-
-def save_questions(thread_name, img_list, question_list, start_time, end_time, analysis_only=False):
-    print("Thread[%s] save %d questions to DB takes %.2fs" % (thread_name, len(question_list), end_time - start_time))
-    if analysis_only:
-        for analysis_data in question_list:
-            db_client.updata_analysis(analysis_data)
-        question_list.clear()
-    else:
-        if not db_client.insert_many(QUESTION_DETAILS, question_list):
-            print("Thread[%s] insert batch questions failed. Try to insert one by one", thread_name)
-            for question in question_list:
-                if not db_client.insert_one(QUESTION_DETAILS, question):
-                    print("Thread[%s] insert question[id=%s] failed. Try to insert one by one" % (
-                    thread_name, question[ID]))
-        update_url_resolved(question_list)
-        question_list.clear()
-
-    if len(img_list) != 0:
-        if not db_client.insert_many(COLLECTION_IMAGE, img_list):
-            print("Thread[%s] inserted batch images failed. Try to insert one by one", thread_name)
-            for img_src in img_list:
-                if not db_client.insert_one(COLLECTION_IMAGE, img_src):
-                    print("Thread[%s] inserted image[uuid=%s] failed. Try to insert one by one" % (thread_name, img_src[UUID]))
-        img_list.clear()
 
 
 def is_valid_cookies(cookies):
@@ -292,8 +261,8 @@ def validate_tag(tag, url):
 
 
 class Task(Thread):
-    def __init__(self, thread_id=0, thread_nums=1, question_type='', criteria=None,
-                 account=None, use_gui=False, max_size=1000, phantomjs_path='', analysis_only=False):
+    def __init__(self, thread_id=0, thread_nums=1, question_type='', criteria=None, account=None,
+                 use_gui=False, max_size=1000, phantomjs_path='', analysis_only=False, mongo_client=None):
         """
         :param thread_id
         :param question_type:
@@ -313,6 +282,7 @@ class Task(Thread):
         self.headers = HEADERS.copy()
         self.phantomjs_path = phantomjs_path
         self.analysis_only = analysis_only
+        self.mongo_client = mongo_client
 
     def run(self):
         if self.type == SINGLE_CHOICE:
@@ -363,7 +333,8 @@ class Task(Thread):
             else:
                 self.criteria[RESOLVED] = False
                 self.resolve_synthesis(self.criteria)
-
+        else:
+            print("Wrong question type")
 
     def refresh_cookies(self):
         """
@@ -378,7 +349,7 @@ class Task(Thread):
                      If you don't have this application. you can access https://phantomjs.org/download.html,
                      check your system and download corresponding version's phantomjs.
         """
-        cookies = db_client.load_cookies(self.account[PHONE])
+        cookies = self.mongo_client.load_cookies(self.account[PHONE])
         if not is_valid_cookies(cookies):
             if not self.use_gui:
                 driver = webdriver.PhantomJS(executable_path=self.phantomjs_path)
@@ -402,12 +373,44 @@ class Task(Thread):
                 print("Please scan two-dimension code to login! And press any key to continue!")
                 input()
             cookies = driver.get_cookies()
-            db_client.insert_or_update_cookies({PHONE: self.account[PHONE], COOKIES: cookies})
+            self.mongo_client.insert_or_update_cookies({PHONE: self.account[PHONE], COOKIES: cookies})
         cookies_str = ''
         for cookie in cookies:
             cookies_str += str(cookie['name']) + '=' + str(cookie['value']) + ';'
         self.headers[COOKIE] = cookies_str
         return True
+
+    def update_url_resolved(self, question_list):
+        url_id_list = []
+        for q in question_list:
+            url_id_list.append(q[ID])
+        self.mongo_client.update_url_resolved(url_id_list)
+
+    def save_questions(self, thread_name, img_list, question_list, start_time, end_time, analysis_only=False):
+        print(
+            "Thread[%s] save %d questions to DB takes %.2fs" % (thread_name, len(question_list), end_time - start_time))
+        if analysis_only:
+            for analysis_data in question_list:
+                self.mongo_client.updata_analysis(analysis_data)
+            question_list.clear()
+        else:
+            if not self.mongo_client.insert_many(QUESTION_DETAILS, question_list):
+                print("Thread[%s] insert batch questions failed. Try to insert one by one", thread_name)
+                for question in question_list:
+                    if not self.mongo_client.insert_one(QUESTION_DETAILS, question):
+                        print("Thread[%s] insert question[id=%s] failed. Try to insert one by one" % (
+                            thread_name, question[ID]))
+            self.update_url_resolved(question_list)
+            question_list.clear()
+
+        if len(img_list) != 0:
+            if not self.mongo_client.insert_many(COLLECTION_IMAGE, img_list):
+                print("Thread[%s] inserted batch images failed. Try to insert one by one", thread_name)
+                for img_src in img_list:
+                    if not self.mongo_client.insert_one(COLLECTION_IMAGE, img_src):
+                        print("Thread[%s] inserted image[uuid=%s] failed. Try to insert one by one" % (
+                        thread_name, img_src[UUID]))
+            img_list.clear()
 
     def resolve_single(self, criteria):
         last = 0
@@ -419,7 +422,7 @@ class Task(Thread):
         count = 0
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
-            url_list = db_client.find(QUESTION_URL, BATCH_SIZE, offset, criteria)
+            url_list = self.mongo_client.find(QUESTION_URL, BATCH_SIZE, offset, criteria)
             print("Thread[%s] start to fetch [%d] questions" % (self.name, BATCH_SIZE))
             # url_list = db_client.load_url_by_id(['1997544'])
             count += len(url_list)
@@ -493,10 +496,10 @@ class Task(Thread):
                         print(ex)
                         print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item[ID], question_url))
                     if len(question_list) == QUESTION_BATCH_SIZE:
-                        save_questions(self.name, img_list, question_list, start_time, time.time())
+                        self.save_questions(self.name, img_list, question_list, start_time, time.time())
                         start_time = time.time()
             if len(question_list) > 0:
-                save_questions(self.name, img_list, question_list, start_time, time.time())
+                self.save_questions(self.name, img_list, question_list, start_time, time.time())
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
               % (self.name, count, time.time() - begin_time))
     
@@ -510,7 +513,7 @@ class Task(Thread):
         count = 0
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
-            url_list = db_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
+            url_list = self.mongo_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
             print("Thread[%s] start to fetch [%d] questions" %(self.name, BATCH_SIZE))
             # url_list = ["http://www.51jiaoxi.com/question-477458.html"]
             # url_list = db_client.load_url_by_id(['477458'])
@@ -577,10 +580,10 @@ class Task(Thread):
                         print(ex)
                         print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item[ID], question_url))
                     if len(question_list) == QUESTION_BATCH_SIZE:
-                        save_questions(self.name, img_list, question_list, start_time, time.time())
+                        self.save_questions(self.name, img_list, question_list, start_time, time.time())
                         start_time = time.time()
             if len(question_list) > 0:
-                save_questions(self.name, img_list, question_list, start_time, time.time())
+                self.save_questions(self.name, img_list, question_list, start_time, time.time())
                 print(self.name, img_list, question_list, start_time, time.time())
             break
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
@@ -596,7 +599,7 @@ class Task(Thread):
         count = 0
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
-            url_list = db_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
+            url_list = self.mongo_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
             print("Thread[%s] start to fetch [%d] questions" %(self.name, BATCH_SIZE))
             # url_list = ["http://www.51jiaoxi.com/question-328701.html"]
             # url_list = db_client.load_url_by_id(['328701'])
@@ -663,10 +666,10 @@ class Task(Thread):
                         print(ex)
                         print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item[ID], question_url))
                     if len(question_list) == QUESTION_BATCH_SIZE:
-                        save_questions(self.name, img_list, question_list, start_time, time.time())
+                        self.save_questions(self.name, img_list, question_list, start_time, time.time())
                         start_time = time.time()
             if len(question_list) > 0:
-                save_questions(self.name, img_list, question_list, start_time, time.time())
+                self.save_questions(self.name, img_list, question_list, start_time, time.time())
                 # print(self.name, img_list, question_list, start_time, time.time())
             break
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
@@ -682,7 +685,7 @@ class Task(Thread):
         count = 0
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
-            url_list = db_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
+            url_list = self.mongo_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
             print("Thread[%s] start to fetch [%d] questions" %(self.name, BATCH_SIZE))
             # url_list = ["http://www.51jiaoxi.com/question-692577.html"]
             # url_list = db_client.load_url_by_id(['692577'])
@@ -759,10 +762,10 @@ class Task(Thread):
                         print(ex)
                         print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item[ID], question_url))
                     if len(question_list) == QUESTION_BATCH_SIZE:
-                        save_questions(self.name, img_list, question_list, start_time, time.time())
+                        self.save_questions(self.name, img_list, question_list, start_time, time.time())
                         start_time = time.time()
             if len(question_list) > 0:
-                save_questions(self.name, img_list, question_list, start_time, time.time())
+                self.save_questions(self.name, img_list, question_list, start_time, time.time())
                 # print(self.name, img_list, question_list, start_time, time.time())
             break
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
@@ -778,10 +781,10 @@ class Task(Thread):
         count = 0
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
-            unfetched_data = db_client.find(QUESTION_DETAILS, BATCH_SIZE, offset, criteria)
+            unfetched_data = self.mongo_client.find(QUESTION_DETAILS, BATCH_SIZE, offset, criteria)
             id_list = [item['id'] for item in unfetched_data]
 
-            url_list = db_client.find_url_by_ids(id_list)
+            url_list = self.mongo_client.find_url_by_ids(id_list)
             print("Thread[%s] start to fetch [%d] questions' analysis" % (self.name, BATCH_SIZE))
             # url_list = db_client.load_url_by_id(['1997544'])
             count += len(url_list)
@@ -819,9 +822,11 @@ class Task(Thread):
                             print("Sorry! Thread[%s] has run out of the accessing times for analysis!" % self.name)
                             warn = False
                         if len(question_list) > 0:
-                            save_questions(self.name, img_list, question_list, start_time, time.time(), True)
+                            self.save_questions(self.name, img_list, question_list, start_time, time.time(), True)
                         return
                     else:
+                        if len(analyze_tag.contents) != 3:
+                            analyze_tag = analyze_tag.contents[0]
                         analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag)
                         analysis_sequence[FETCHED] = True
 
@@ -836,12 +841,13 @@ class Task(Thread):
                     print(ex)
                     print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item[ID], question_url))
                 if len(question_list) == QUESTION_BATCH_SIZE:
-                    save_questions(self.name, img_list, question_list, start_time, time.time(), True)
+                    self.save_questions(self.name, img_list, question_list, start_time, time.time(), True)
                     start_time = time.time()
             if len(question_list) > 0:
-                save_questions(self.name, img_list, question_list, start_time, time.time(), True)
+                self.save_questions(self.name, img_list, question_list, start_time, time.time(), True)
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
               % (self.name, count, time.time() - begin_time))
+
 
 if __name__ == '__main__':
     options = Options()
