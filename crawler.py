@@ -3,7 +3,7 @@ import json
 import mongo_client
 from config import *
 from crawler_task import Task
-
+import argparse
 
 
 def str2bool(s):
@@ -11,15 +11,45 @@ def str2bool(s):
 
 
 def str2type(s="0"):
-    if s == '0':
-        return SINGLE_CHOICE
+    if s == "0":
+        return "单选题"
     elif s == "1":
         return "填空题"
     elif s == "2":
         return "计算题"
-    elif s == "3":
-        return "综合题"
     return None
+
+
+def parse_args():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('-i','--ip',
+                        dest='ip',
+                        type=int,
+                        required=True,
+                        help='the ip of host')
+    parser.add_argument('-p','--port',
+                        dest='port',
+                        type=int,
+                        required=True,
+                        help='the port of db')
+    parser.add_argument('--driver-path',
+                        dest='driver_path',
+                        type=str,
+                        required=True,
+                        help='the path to the PhantomJS')
+    parser.add_argument('-q','--question_type',
+                        dest='question_type',
+                        type=int,
+                        required=True,
+                        choices=[0,1,2],
+                        help='the question type you want to get.\n[QUESTION_TYPE]\n0: 单选题\n1: 填空题\n2: 计算题')
+    parser.add_argument('-a','--analysis_only',
+                        dest='analysis_only',
+                        type=bool,
+                        default=False,
+                        help='if true, this script will only get analysis only')
+    return parser.parse_args()
+
 
 
 if __name__ == '__main__':
@@ -31,22 +61,22 @@ if __name__ == '__main__':
         0: 单选题
         1: 填空题
         2: 计算题
-        3：综合题
         """
-    if len(sys.argv) < 3:
-        print(usage)
-        exit(1)
-    phantomjs_path = sys.argv[1]
-    question_type = str2type(sys.argv[2])
-    if question_type is None:
-        print("Bad question type.\n%s" % usage)
-        exit(1)
-    analysis_only = False
-    if len(sys.argv) > 3:
-        analysis_only = str2bool(sys.argv[3])
-    print(analysis_only)
+    option=parse_args()
+    MONGO_HOST=option.ip
+    MONGO_PORT=option.port
+#    if len(sys.argv) < 3:
+#        print(usage)
+#        exit(1)
+    phantomjs_path = option.driver_path
+    question_type = str2type(option.question_type)
+#    if question_type is None:
+#        print("Bad question type.\n%s" % usage)
+#        exit(1)
+    analysis_only = option.analysis_only
+#    if len(sys.argv) > 3:
+#        analysis_only = str2bool(sys.argv[3])
     accounts = mongo_client.get_accounts()
-    print(accounts)
     criteria = {"class.class1": {"$nin": ["图形的性质", "图形的变换"]}, "type": question_type}
     if analysis_only:
         print("Only fetch analysis for (%s)" % question_type)
@@ -62,9 +92,7 @@ if __name__ == '__main__':
     # Exclude: $nin, include: $in
     thread_id = 0
     for account in accounts:
-        print("getting into thread")
         t = Task(thread_id, thread_nums, question_type, criteria, account,
                  False, batch_size, phantomjs_path, analysis_only)
         t.start()
         thread_id += 1
-        # break
