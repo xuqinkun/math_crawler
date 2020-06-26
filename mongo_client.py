@@ -209,8 +209,8 @@ class MongoDriver:
         account_list = []
         with MongoClient(self.host, self.port) as client:
             collection = client.math_questions.account
-            print(list(collection.find()))
-            for account in list(collection.find()):
+            cursor = collection.find()
+            for account in cursor:
                 phone = account['phone']
                 pwd = utils.rsa_decrypt(account['password'])
                 account_list.append({'phone': phone, 'password': pwd})
