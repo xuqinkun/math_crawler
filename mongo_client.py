@@ -96,6 +96,14 @@ class MongoDriver:
                 data.append(doc)
             return data
 
+    def load_unchecked_img(self,start=0):
+        with MongoClient(self.host, self.port) as client:
+            db=client[DB]
+            collection=db[COLLECTION_IMAGE]
+            filter_={'checked':False}
+            data=collection.find(filter_).skip(start).limit(5)
+            return data
+
     def insert_or_update_cookies(self, cookies=[]):
         with MongoClient(self.host, self.port) as client:
             db = client[DB]
