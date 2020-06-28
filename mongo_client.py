@@ -142,6 +142,19 @@ class MongoDriver:
             print("%d images text updated "% count)
         return True
 
+    def update_img_check_info(self,data={}):
+        with MongoClient(self.host, self.port) as client:
+            db = client[DB]
+            collection = db[COLLECTION_IMAGE]
+            filter_={'uuid':data['uuid']}
+            update={'$set':{'resolved':True,'checked':True,'plain_text':data['plain_text']}}
+            try:
+                collection.update_one(filter=filter_,update=update)
+                return True
+            except Exception as e:
+                print(e)
+                return False
+
     def updata_analysis(self, analysis_data={}):
         with MongoClient(self.host, self.port) as client:
             db = client[DB]
