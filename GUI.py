@@ -11,7 +11,7 @@ import utils
 class MainWindow(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        self.driver=MongoDriver('121.48.165.7',11118)
+        self.driver=MongoDriver('xxx.xxx.xxx.xxx',11118)
         self.data=[]
         self.index=0
         self.size=0
