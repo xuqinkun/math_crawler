@@ -39,13 +39,13 @@ LOCAL_IMG_DIR = "./LocalImages/"
 # ------------------------------------OCR parameters-------------------------------------------
 #tencent
 Tencent_API_KEY = "your_api_key"
-Tencent_SECRET_KEY = "your_secret_key"
+Tencent_SECRET_KEY = "your_api_secret_key"
 #baidu
 Baidu_APP_ID = "20481895"
 Baidu_API_KEY = "jcqLdnhT3Ob4jflDqboKoG1z"
 Baidu_SECRET_KEY = "KAAcqOuXbtDPVgdH0NPXtGj6LZdPiO5i"
 #OCR batch_size
-OCR_BATCH_SIZE = 300
+OCR_BATCH_SIZE = 800
 
 # question_type
 SINGLE_CHOICE = "单选题"

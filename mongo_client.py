@@ -190,15 +190,19 @@ class MongoDriver:
             return png_list
 
 
-    def load_img_src(self):
+    def load_img_src(self,batch_size = 100):
         with MongoClient(self.host, self.port) as client:
             db = client[DB]
             collection = db[COLLECTION_IMAGE]
             docs = collection.find({})
             png_dict = {}
+            count = 0
             for doc in docs:
                 if not doc[RESOLVED]:
                     png_dict[doc[UUID]] = doc["src"]
+                    count += 1
+                if count >= batch_size:
+                    break
             return png_dict
 
 

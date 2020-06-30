@@ -1,7 +1,9 @@
 import base64
 from config import *
-from mongo_client import load_img_src, update_img_info
+# from mongo_client import load_img_src, update_img_info
+from mongo_client import MongoDriver
 from utils import image_transform,url_img_download
+import argparse
 
 
 # local images need encoding
@@ -34,22 +36,28 @@ def tencent_image2str_url(uuid_url_dict, types="characters"):
             req = models.EduPaperOCRRequest()  # questions model
         elif types == "characters":
             req = models.GeneralBasicOCRRequest()  # characters model
-        for uuid, url in uuid_url_dict.item():
+        for uuid, url in uuid_url_dict.items():
             params = {}
-            params = '{\"ImageUrl\":\"url\"}'.replace("url", image_path)
+            params = '{\"ImageUrl\":\"url\"}'.replace("url", url)
+            print("OCR resolving %s" %url)
             req.from_json_string(params)
             ret = ''
-            if types == "questions":
-                resp = client.EduPaperOCR(req)
-                for questionsblock in resp.QuestionBlockInfos:
-                    for textblock in questionsblock.QuestionArr:
-                        ret = ret + textblock.QuestionText + '\n'
-            elif types == "characters":
-                resp = client.GeneralBasicOCR(req)
-                for textblock in resp.TextDetections:
-                    if textblock.Confidence >= 85:
-                        ret = ret + textblock.DetectedText + '\n'
-            uuid_text_dict[uuid] = ret
+            try:
+                if types == "questions":
+                    resp = client.EduPaperOCR(req)
+                    for questionsblock in resp.QuestionBlockInfos:
+                        for textblock in questionsblock.QuestionArr:
+                            ret = ret + textblock.QuestionText + '\n'
+                elif types == "characters":
+                    resp = client.GeneralBasicOCR(req)
+                    for textblock in resp.TextDetections:
+                        if textblock.Confidence >= 85:
+                            ret = ret + textblock.DetectedText + '\n'
+                uuid_text_dict[uuid] = ret
+            except TencentCloudSDKException as err:
+                print(err)
+                print("OCR failed! URL:%s, set text empty"%url)
+                uuid_text_dict[uuid] = ''
         return uuid_text_dict
 
     except TencentCloudSDKException as err:
@@ -103,16 +111,53 @@ def baidu_image2str_local(image_path, types="characters"):
     elif types == "questions":
         pass
     return ret
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--ip',
+                        dest='ip',
+                        type=str,
+                        required=True,
+                        help='the ip of host')
+    parser.add_argument('-p', '--port',
+                        dest='port',
+                        type=int,
+                        required=True,
+                        help='the port of db')
+    parser.add_argument('-t','--type',
+                        dest='type',
+                        type=int,
+                        required=True,
+                        choices=[0, 1, 2],
+                        help='the type of api.\n[QUESTION_TYPE]\n0: baidu_characters\n1: tencent_characters\n2: tencent_questions')
+    return parser.parse_args()
 
 if __name__ == '__main__':
+    '''
+    0 : baidu characters model
+    1 : tencent characters model
+    2 : tencent questions model
+    '''
     # test_dict = {}
     # test_dict["c92c5200-1c3e-11ea-b1ec-11621d417c16"] = "https://img.51jiaoxi.com/questions/c92c5200-1c3e-11ea-b1ec-11621d417c16.png"
     # print(baidu_image2str_url(test_dict, "characters"))
     # print(tencent_image2str(test_dict, "question"))
-    
-    #use baidu api
-    imgs = load_img_src()
-    imgs_text_dict = baidu_image2str_url(imgs)
-    print(update_img_info(imgs_text_dict))
+    args = parse_args()
+    mongo_client = MongoDriver(args.ip, args.port)    
+
+    imgs = mongo_client.load_img_src(OCR_BATCH_SIZE)
+    print(len(imgs))
+
+    #use baidu characters api
+    if args.type == 0:
+        imgs_text_dict = baidu_image2str_url(imgs)
+    #use tencent characters api
+    elif args.type == 1:
+        imgs_text_dict = tencent_image2str_url(imgs)
+    #use tencent questions api
+    elif args.type == 2:
+        imgs_text_dict = tencent_image2str_url(imgs,'questions')
+    print("solved %d images"%len(imgs_text_dict))
+    print(imgs_text_dict)
+    print(mongo_client.update_img_info(imgs_text_dict))
 
     
