@@ -45,7 +45,7 @@ def resolve_img_tag(tag=Tag(name="")):
     elif img_src.find(IMAGE) != -1:  # Simple url for png
         # print(tag)
         uuid, img_format = get_uuid(img_src)
-        return {img_format: uuid}, {UUID: uuid, SRC: img_src, RESOLVED: False}
+        return {img_format: uuid}, {UUID: uuid, SRC: img_src, RESOLVED: False, CHECKED: False}
     else:
         return {}, {}
 
@@ -115,7 +115,7 @@ def resolve_sub_question(tag=Tag(name='')):
 
 def resolve_sub_analysis(tag=Tag(name='')):
     subtags = tag.select("div[class=paper-subquestion-answer]")
-    plain_text = {"答案":[]}
+    plain_text = {"答案": []}
     url_map = []
     for child in subtags:  # Traverse the children of tag
         img_src = []
@@ -125,7 +125,7 @@ def resolve_sub_analysis(tag=Tag(name='')):
         value, img_src = resolve_tag(child.contents[1])
         plain_text[key] += value
         url_map += img_src
-    return plain_text,url_map
+    return plain_text, url_map
 
 
 def resolve_single_tag(tag=Tag(name='')):
@@ -409,7 +409,7 @@ class Task(Thread):
                 for img_src in img_list:
                     if not self.mongo_client.insert_one(COLLECTION_IMAGE, img_src):
                         print("Thread[%s] inserted image[uuid=%s] failed. Try to insert one by one" % (
-                        thread_name, img_src[UUID]))
+                            thread_name, img_src[UUID]))
             img_list.clear()
 
     def resolve_single(self, criteria):
@@ -502,7 +502,7 @@ class Task(Thread):
                 self.save_questions(self.name, img_list, question_list, start_time, time.time())
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
               % (self.name, count, time.time() - begin_time))
-    
+
     def resolve_blank(self, criteria):
         last = 0
         img_list = []
@@ -514,7 +514,7 @@ class Task(Thread):
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
             url_list = self.mongo_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
-            print("Thread[%s] start to fetch [%d] questions" %(self.name, BATCH_SIZE))
+            print("Thread[%s] start to fetch [%d] questions" % (self.name, BATCH_SIZE))
             # url_list = ["http://www.51jiaoxi.com/question-477458.html"]
             # url_list = db_client.load_url_by_id(['477458'])
             # print(url_list)
@@ -546,7 +546,8 @@ class Task(Thread):
                         analysis_sequence = {}
                         analysis_img_list = []
                         if utils.contains_str(analyze_text, '显示答案解析'):
-                            print("Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
+                            print(
+                                "Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
                             # exit()
                             if self.refresh_cookies():
                                 print("Thread[%s] refresh cookies success!" % self.name)
@@ -600,7 +601,7 @@ class Task(Thread):
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
             url_list = self.mongo_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
-            print("Thread[%s] start to fetch [%d] questions" %(self.name, BATCH_SIZE))
+            print("Thread[%s] start to fetch [%d] questions" % (self.name, BATCH_SIZE))
             # url_list = ["http://www.51jiaoxi.com/question-328701.html"]
             # url_list = db_client.load_url_by_id(['328701'])
             # print(url_list)
@@ -617,7 +618,7 @@ class Task(Thread):
                             print("Resolved failed for url[%s] status_code[%d]" % (question_url, resp.status_code))
                             continue
                         soup = BeautifulSoup(resp.text, 'html.parser')
-                        
+
                         # Resolve title
                         title_tag = soup.select_one("div[class=paper-question-title]")
                         if not validate_tag(title_tag, question_url):  # Skip tag which resolved failed
@@ -632,7 +633,8 @@ class Task(Thread):
                         analysis_sequence = {}
                         analysis_img_list = []
                         if utils.contains_str(analyze_text, '显示答案解析'):
-                            print("Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
+                            print(
+                                "Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
                             # exit()
                             if self.refresh_cookies():
                                 print("Thread[%s] refresh cookies success!" % self.name)
@@ -686,7 +688,7 @@ class Task(Thread):
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
             url_list = self.mongo_client.load_unresolved_url(BATCH_SIZE, offset, criteria)
-            print("Thread[%s] start to fetch [%d] questions" %(self.name, BATCH_SIZE))
+            print("Thread[%s] start to fetch [%d] questions" % (self.name, BATCH_SIZE))
             # url_list = ["http://www.51jiaoxi.com/question-692577.html"]
             # url_list = db_client.load_url_by_id(['692577'])
             # print(url_list)
@@ -704,7 +706,7 @@ class Task(Thread):
                             continue
                         # print(resp)
                         soup = BeautifulSoup(resp.text, 'html.parser')
-                        
+
                         # Resolve title
                         title_tag = soup.select_one("div[class=paper-question-title]")
                         if not validate_tag(title_tag, question_url):  # Skip tag which resolved failed
@@ -725,7 +727,8 @@ class Task(Thread):
                         analysis_sequence = {}
                         analysis_img_list = []
                         if utils.contains_str(analyze_text, '显示答案解析'):
-                            print("Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
+                            print(
+                                "Warning! You[%s] have not login! Answer is invisible! Try to refresh cookies..." % self.name)
                             # exit()
                             if self.refresh_cookies():
                                 print("Thread[%s] refresh cookies success!" % self.name)
@@ -746,7 +749,7 @@ class Task(Thread):
                         message_tag = soup.select_one("div[class=paper-message-attr]")
                         question_message = resolve_message(message_tag)
 
-                        question_data = {ID: item[ID], TITLE: title_sequence,SUBTITLE:subtitle_sequence}
+                        question_data = {ID: item[ID], TITLE: title_sequence, SUBTITLE: subtitle_sequence}
                         question_data.update(question_message)
                         question_data.update(analysis_sequence)
                         question_list.append(question_data)
@@ -770,7 +773,7 @@ class Task(Thread):
             break
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
               % (self.name, count, time.time() - begin_time))
-    
+
     def only_for_analysis(self, criteria):
         last = 0
         img_list = []

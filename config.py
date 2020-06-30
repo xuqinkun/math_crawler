@@ -49,3 +49,5 @@ OCR_BATCH_SIZE = 300
 
 # question_type
 SINGLE_CHOICE = "单选题"
+
+CHECKED = "checked"
