@@ -7,10 +7,12 @@ import PyQt5.QtCore as QtCore
 from PIL import Image
 from mongo_client import MongoDriver
 import utils
+import _thread as thread
 
 class MainWindow(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
+        print('start GUI')
         self.driver=MongoDriver('xxx.xxx.xxx.xxx',11118)
         self.data=[]
         self.index=0
@@ -47,9 +49,11 @@ class MainWindow(QtWidgets.QWidget):
     def name_label(self):
         self.name_label=QtWidgets.QLabel('UUID:')
         self.uuid_label=QtWidgets.QLabel()
+        self.checked_label=QtWidgets.QLabel(str(self.checked))
 
         self.name_label.setFont(self.font)
         self.uuid_label.setFont(self.font)
+        self.checked_label.setFont(self.font)
     
     def image_box(self):
         self.display_area=QtWidgets.QScrollArea()
@@ -70,7 +74,8 @@ class MainWindow(QtWidgets.QWidget):
         name_box.addWidget(self.name_label)
         name_box.addWidget(self.uuid_label)
         grid=QtWidgets.QGridLayout()
-        grid.addLayout(name_box,0,0,2,20,QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        grid.addLayout(name_box,0,0,2,18,QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        grid.addWidget(self.checked_label,0,18,2,2,QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
         grid.addWidget(self.prev_button,2,0,8,2,QtCore.Qt.AlignVCenter)
         grid.addWidget(self.display_area,2,2,8,16)#,QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
         grid.addWidget(self.next_button,2,18,8,2,QtCore.Qt.AlignVCenter)
@@ -84,7 +89,7 @@ class MainWindow(QtWidgets.QWidget):
         self.image.setPixmap(image_pixmap)
 
     def get_next_batch_data(self):
-        data=self.driver.load_unchecked_img(self.size-self.checked)
+        data=self.driver.load_unchecked_img(10,self.size-self.checked)
         for d in data:
             self.size+=1
             img_path=utils.image_transform(utils.url_img_download(d['src']))
@@ -112,8 +117,12 @@ class MainWindow(QtWidgets.QWidget):
             self.set_info(data)
 
     def next_page(self):
-        if self.index+1==self.size:
-            self.get_next_batch_data()
+        if self.index+6>=self.size:
+            try:
+                thread.start_new_thread(self.get_next_batch_data,())
+            except Exception as e:
+                print(e)
+                exit()
         print(self.size,self.index)
         self.index=self.index+1
         data=self.data[self.index]
@@ -122,11 +131,13 @@ class MainWindow(QtWidgets.QWidget):
     def check(self):
         data=self.data[self.index]
         data['plain_text']=self.text_box.toPlainText()
+        flag1= True if data['checked']==False else False
         data['resolved']=True
         data['checked']=True
-        flag=self.driver.update_img_check_info(data)
-        if flag==True:
+        flag2=self.driver.update_img_check_info(data)
+        if flag1==True and flag2==True:
             self.checked=self.checked+1
+            self.checked_label.setText(str(self.checked))
 
     def restore(self):
         data=self.data[self.index]
