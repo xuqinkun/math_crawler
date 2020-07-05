@@ -9,15 +9,17 @@ from mongo_client import MongoDriver
 import utils
 import _thread as thread
 
+
 class MainWindow(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         print('start GUI')
-        self.driver=MongoDriver('xxx.xxx.xxx.xxx',11118)
+        self.driver=MongoDriver('121.48.165.6',11118)
         self.data=[]
         self.index=0
         self.size=0
         self.checked=0
+        self.getting=False
 
         self.get_next_batch_data()
         data=self.data[self.index]
@@ -89,14 +91,19 @@ class MainWindow(QtWidgets.QWidget):
         self.image.setPixmap(image_pixmap)
 
     def get_next_batch_data(self):
-        data=self.driver.load_unchecked_img(10,self.size-self.checked)
-        for d in data:
-            self.size+=1
-            img_path=utils.image_transform(utils.url_img_download(d['src']))
-            d['local_path']=img_path
-            if 'plain_text' not in d.keys():
-                d['plain_text']=''
-            self.data.append(d)
+        if self.getting==False:
+            self.getting=True
+            data=self.driver.load_unchecked_img(10,self.size-self.checked)
+            count=0
+            for d in data:
+                count=count+1
+                img_path=utils.image_transform(utils.url_img_download(d['src']))
+                d['local_path']=img_path
+                if 'plain_text' not in d.keys():
+                    d['plain_text']=''
+                self.data.append(d)
+            self.size=self.size+count
+            self.getting=False
 
     def set_info(self,data):
         self.uuid_label.setText(data['uuid'])
@@ -124,9 +131,10 @@ class MainWindow(QtWidgets.QWidget):
                 print(e)
                 exit()
         print(self.size,self.index)
-        self.index=self.index+1
-        data=self.data[self.index]
-        self.set_info(data)
+        if self.index+1!=self.size:
+            self.index=self.index+1
+            data=self.data[self.index]
+            self.set_info(data)
 
     def check(self):
         data=self.data[self.index]
