@@ -25,12 +25,10 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) " +
                   "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36",
     }
-login_url = r'http://www.51jiaoxi.com/login'
 SINGLE_CHOICE = '单选题'
 FILL_BLANKS = '填空题'
 COMPUTATION = '计算题'
 SYNTHESIS = '综合题'
-ID = "id"
 OPTIONS = "options"
 TITLE = "title"
 SUBTITLE = "subtitle"
@@ -47,5 +45,4 @@ Baidu_SECRET_KEY = "KAAcqOuXbtDPVgdH0NPXtGj6LZdPiO5i"
 #OCR batch_size
 OCR_BATCH_SIZE = 800
 
-# question_type
-SINGLE_CHOICE = "单选题"
+CHECKED = "checked"
