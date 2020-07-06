@@ -16,7 +16,7 @@ class MainWindow(QtWidgets.QWidget):
         print('start GUI')
         self.driver=MongoDriver('xxx.xxx.xxx.xxx',11118)
         self.data=[]
-        self.index=
+        self.index=0
         self.size=0
         self.checked=0
         self.getting=False
