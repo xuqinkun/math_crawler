@@ -360,7 +360,7 @@ class Task(Thread):
                 time.sleep(1)
                 driver.find_element_by_css_selector('div.phone.login-way.wechat-leave').click()
                 driver.find_element_by_id('login-auth-phone').send_keys(self.account[PHONE])
-                driver.find_element_by_id('login-auth-password').send_keys(self.account['password'])
+                driver.find_element_by_id('login-auth-password').send_keys(self.account[PASSWD])
                 driver.find_element_by_css_selector('button.login-button.jx-button').click()
                 time.sleep(1)
                 error_msg = driver.find_element_by_css_selector("span[class='alert-message error']").text
@@ -826,6 +826,7 @@ class Task(Thread):
                             warn = False
                         if len(question_list) > 0:
                             self.save_questions(self.name, img_list, question_list, start_time, time.time(), True)
+                            print("Total fetch %d " % count)
                         return
                     else:
                         if len(analyze_tag.contents) != 3:
