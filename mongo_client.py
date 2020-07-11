@@ -166,7 +166,7 @@ class MongoDriver:
         with MongoClient(self.host, self.port) as client:
             db = client[DB]
             collection = db[COLLECTION_IMAGE]
-            filter_={'uuid':data['uuid']}
+            filter_={'_id':data['_id']}
             update={'$set':{'resolved':data['resolved'],'checked':data['checked'],'plain_text':data['plain_text'],'checking':data['checking']}}
             try:
                 collection.update_one(filter=filter_,update=update)
