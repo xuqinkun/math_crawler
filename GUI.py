@@ -142,12 +142,30 @@ class MainWindow(QWidget):
             self.text_box.setText('')
 
     def prev_page(self):
-        if self.index > 0:
-            self.index = self.index - 1;
+        skip = False
+        # Text is unsaved, pop a message box
+        if self.info_label.text().find("Unsave") != -1:
+            reply = QMessageBox.question(self, 'Warning', 'Unsaved!Are you sure to leave?',
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+            if reply == QMessageBox.Yes:
+                skip = True
+        else:
+            skip = True
+        if skip and self.index > 0:
+            self.index = self.index - 1
             data = self.data[self.index]
             self.set_info(data)
 
     def next_page(self):
+        skip = False
+        if self.info_label.text().find("Unsave") != -1:
+            reply = QMessageBox.question(self, 'Warning', 'Unsaved!Are you sure to leave?',
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                skip = True
+        else:
+            skip = True
         if self.index + 6 >= self.size:
             try:
                 thread.start_new_thread(self.get_next_batch_data, ())
@@ -155,8 +173,8 @@ class MainWindow(QWidget):
                 print(e)
                 exit()
         print(self.size, self.index)
-        if self.index + 1 != self.size:
-            self.index = self.index + 1
+        if skip and self.index + 1 != self.size:
+            self.index += 1
             data = self.data[self.index]
             self.set_info(data)
 
