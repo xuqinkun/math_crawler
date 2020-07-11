@@ -52,6 +52,22 @@ class MongoDriver:
             print(e)
             return False
 
+    def update_one(self,collection_name='',doc={}):
+        if len(doc) == 0:
+            return True
+        try:
+            with MongoClient(self.host, self.port) as client:
+                db = client[DB]
+                collection = db[collection_name]
+                filter_=doc['filter']
+                update_=doc['update']
+                collection.update_one(filter=filter_,update=update_)
+                return True
+        except Exception as e:
+            print(e)
+            return False
+
+
     # Load $num urls from the start item
     def find(self, collection_name='', num=0, start=0, criteria={}):
         with MongoClient(self.host, self.port) as client:
@@ -96,12 +112,16 @@ class MongoDriver:
                 data.append(doc)
             return data
 
-    def load_unchecked_img(self,start=0):
+    def load_unchecked_img(self,num=10,start=0):
         with MongoClient(self.host, self.port) as client:
             db=client[DB]
             collection=db[COLLECTION_IMAGE]
-            filter_={'checked':False}
-            data=collection.find(filter_).skip(start).limit(5)
+            filter_={'checked':False,'checking':False}
+            update_={"$set":{"checking":True}}
+            data=[]
+            for i in range(num):
+                d=collection.find_one_and_update(filter=filter_,update=update_)
+                data.append(d)
             return data
 
     def insert_or_update_cookies(self, cookies=[]):
@@ -146,8 +166,8 @@ class MongoDriver:
         with MongoClient(self.host, self.port) as client:
             db = client[DB]
             collection = db[COLLECTION_IMAGE]
-            filter_={'uuid':data['uuid']}
-            update={'$set':{'resolved':True,'checked':True,'plain_text':data['plain_text']}}
+            filter_={'_id':data['_id']}
+            update={'$set':{'resolved':data['resolved'],'checked':data['checked'],'plain_text':data['plain_text'],'checking':data['checking']}}
             try:
                 collection.update_one(filter=filter_,update=update)
                 return True
