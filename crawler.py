@@ -15,6 +15,8 @@ def str2type(s="0"):
         return "填空题"
     elif s == 2:
         return "计算题"
+    elif s == 3:
+        return "综合题"
     return None
 
 
@@ -39,8 +41,8 @@ def parse_args():
                         dest='question_type',
                         type=int,
                         required=True,
-                        choices=[0, 1, 2],
-                        help='the question type you want to get.\n[QUESTION_TYPE]\n0: 单选题\n1: 填空题\n2: 计算题')
+                        choices=[0, 1, 2, 3],
+                        help='the question type you want to get.\n[QUESTION_TYPE]\n0: 单选题\n1: 填空题\n2: 计算题\n3: 综合题')
     parser.add_argument('-a', '--analysis_only',
                         dest='analysis_only',
                         type=bool,
@@ -58,6 +60,7 @@ if __name__ == '__main__':
         0: 单选题
         1: 填空题
         2: 计算题
+        3: 综合题
         """
     option = parse_args()
     phantomjs_path = option.driver_path
@@ -78,10 +81,14 @@ if __name__ == '__main__':
         print("Please insert accounts first!")
         exit(0)
     batch_size = int(count / thread_nums) + thread_nums
+    # batch_size = 100
     # Exclude: $nin, include: $in
     thread_id = 0
+    # accounts = accounts[-1:]
+    # print(accounts)
     for account in accounts:
         t = Task(thread_id, thread_nums, question_type, criteria, account,
                  False, batch_size, phantomjs_path, analysis_only, mongo_client)
         t.start()
         thread_id += 1
+

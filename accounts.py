@@ -19,3 +19,5 @@ def insert_accounts(mongo_host, mongo_port):
         accounts.append({'phone': phone, 'password': pwd})
     mongo_client = MongoDriver(mongo_host, mongo_port)
     mongo_client.insert_many(ACCOUNT, accounts)
+if __name__ == "__main__":
+    insert_accounts('121.48.165.6',11118)

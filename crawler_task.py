@@ -45,7 +45,7 @@ def resolve_img_tag(tag=Tag(name="")):
     elif img_src.find(IMAGE) != -1:  # Simple url for png
         # print(tag)
         uuid, img_format = get_uuid(img_src)
-        return {img_format: uuid}, {UUID: uuid, SRC: img_src, RESOLVED: False, CHECKED: False}
+        return {img_format: uuid}, {UUID: uuid, SRC: img_src, RESOLVED: False, CHECKED: False, CHECKING: False}
     else:
         return {}, {}
 
@@ -558,7 +558,8 @@ class Task(Thread):
                                 warn = False
                             analysis_sequence[FETCHED] = False
                         else:
-                            analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag.contents[0])
+                            paper_analyze_tag = analyze_tag.contents[0]
+                            analysis_sequence, analysis_img_list = resolve_analysis(paper_analyze_tag.contents[0])
                             analysis_sequence[FETCHED] = True
 
                         message_tag = soup.select_one("div[class=paper-message-attr]")
@@ -586,7 +587,6 @@ class Task(Thread):
             if len(question_list) > 0:
                 self.save_questions(self.name, img_list, question_list, start_time, time.time())
                 print(self.name, img_list, question_list, start_time, time.time())
-            break
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
               % (self.name, count, time.time() - begin_time))
 
@@ -645,7 +645,8 @@ class Task(Thread):
                                 warn = False
                             analysis_sequence[FETCHED] = False
                         else:
-                            analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag.contents[0])
+                            paper_analyze_tag = analyze_tag.contents[0]
+                            analysis_sequence, analysis_img_list = resolve_analysis(paper_analyze_tag.contents[0])
                             analysis_sequence[FETCHED] = True
 
                         message_tag = soup.select_one("div[class=paper-message-attr]")
@@ -673,7 +674,6 @@ class Task(Thread):
             if len(question_list) > 0:
                 self.save_questions(self.name, img_list, question_list, start_time, time.time())
                 # print(self.name, img_list, question_list, start_time, time.time())
-            break
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
               % (self.name, count, time.time() - begin_time))
 
@@ -739,7 +739,8 @@ class Task(Thread):
                                 warn = False
                             analysis_sequence[FETCHED] = False
                         else:
-                            analysis_sequence, analysis_img_list = resolve_analysis(analyze_tag.contents[0])
+                            paper_analyze_tag = analyze_tag.contents[0]
+                            analysis_sequence, analysis_img_list = resolve_analysis(paper_analyze_tag.contents[0])
                             if len(subtitle_sequence) > 0:
                                 subtitle_answer_squence, subtitle_answer_img_list = resolve_sub_analysis(subtitle_tag)
                                 # print(subtitle_answer_squence)
@@ -770,7 +771,6 @@ class Task(Thread):
             if len(question_list) > 0:
                 self.save_questions(self.name, img_list, question_list, start_time, time.time())
                 # print(self.name, img_list, question_list, start_time, time.time())
-            break
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
               % (self.name, count, time.time() - begin_time))
 
