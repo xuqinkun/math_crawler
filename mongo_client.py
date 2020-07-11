@@ -52,6 +52,22 @@ class MongoDriver:
             print(e)
             return False
 
+    def update_one(self,collection_name='',doc={}):
+        if len(doc) == 0:
+            return True
+        try:
+            with MongoClient(self.host, self.port) as client:
+                db = client[DB]
+                collection = db[collection_name]
+                filter_=doc['filter']
+                update_=doc['update']
+                collection.update_one(filter=filter_,update=update_)
+                return True
+        except Exception as e:
+            print(e)
+            return False
+
+
     # Load $num urls from the start item
     def find(self, collection_name='', num=0, start=0, criteria={}):
         with MongoClient(self.host, self.port) as client:
@@ -100,8 +116,12 @@ class MongoDriver:
         with MongoClient(self.host, self.port) as client:
             db=client[DB]
             collection=db[COLLECTION_IMAGE]
-            filter_={'checked':False}
-            data=collection.find(filter_).skip(start).limit(num)
+            filter_={'checked':False,'checking':False}
+            update_={"$set":{"checking":True}}
+            data=[]
+            for i in range(num):
+                d=collection.find_one_and_update(filter=filter_,update=update_)
+                data.append(d)
             return data
 
     def insert_or_update_cookies(self, cookies=[]):
@@ -147,7 +167,7 @@ class MongoDriver:
             db = client[DB]
             collection = db[COLLECTION_IMAGE]
             filter_={'uuid':data['uuid']}
-            update={'$set':{'resolved':True,'checked':True,'plain_text':data['plain_text']}}
+            update={'$set':{'resolved':True,'checked':True,'plain_text':data['plain_text'],'checking':False}}
             try:
                 collection.update_one(filter=filter_,update=update)
                 return True

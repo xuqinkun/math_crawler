@@ -27,6 +27,19 @@ class MainWindow(QtWidgets.QWidget):
         self.GUI()
         self.set_info(data)
 
+    def closeEvent(self,event):
+        print('Closing...')
+        for data in self.data:
+            if data['checked']==False:
+                doc={}
+                filter_={'_id':data['_id']}
+                update_={'$set':{'checking':False}}
+                doc['filter']=filter_
+                doc['update']=update_
+                self.driver.update_one('image',doc)
+        print('Done')
+        event.accept()
+
     def button(self):
         prev_icon = QtGui.QIcon('./GUI_src/prev.png')
         next_icon = QtGui.QIcon('./GUI_src/next.png')
@@ -137,6 +150,15 @@ class MainWindow(QtWidgets.QWidget):
             self.set_info(data)
 
     def check(self):
+        data=self.data[self.index]
+        data['plain_text']=self.text_box.toPlainText()
+        flag1= True if data['checked']==False else False
+        data['resolved']=True
+        data['checked']=True
+        data['checking']=False
+        flag2=self.driver.update_img_check_info(data)
+        if flag1==True and flag2==True:
+            self.checked=self.checked+1
         data = self.data[self.index]
         data['plain_text'] = self.text_box.toPlainText()
         flag1 = True if data['checked'] == False else False
