@@ -167,7 +167,7 @@ class MongoDriver:
             db = client[DB]
             collection = db[COLLECTION_IMAGE]
             filter_={'uuid':data['uuid']}
-            update={'$set':{'resolved':True,'checked':True,'plain_text':data['plain_text'],'checking':False}}
+            update={'$set':{'resolved':data['resolved'],'checked':data['checked'],'plain_text':data['plain_text'],'checking':data['checking']}}
             try:
                 collection.update_one(filter=filter_,update=update)
                 return True

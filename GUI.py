@@ -14,7 +14,7 @@ class MainWindow(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         print('start GUI')
-        self.driver = MongoDriver('xxx.xxx.xxx.xxx', 11118)
+        self.driver = MongoDriver('121.48.165.6', 11118)
         self.data = []
         self.index = 0
         self.size = 0
@@ -159,14 +159,6 @@ class MainWindow(QtWidgets.QWidget):
         flag2=self.driver.update_img_check_info(data)
         if flag1==True and flag2==True:
             self.checked=self.checked+1
-        data = self.data[self.index]
-        data['plain_text'] = self.text_box.toPlainText()
-        flag1 = True if data['checked'] == False else False
-        data['resolved'] = True
-        data['checked'] = True
-        flag2 = self.driver.update_img_check_info(data)
-        if flag1 == True and flag2 == True:
-            self.checked = self.checked + 1
             self.checked_label.setText(str(self.checked))
 
     def restore(self):
