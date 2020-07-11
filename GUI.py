@@ -1,16 +1,16 @@
-import sys
-import os
-import PyQt5.QtWidgets as QtWidgets
-import PyQt5.QtGui as QtGui
-import PyQt5.Qt as Qt
-import PyQt5.QtCore as QtCore
-from PIL import Image
-from mongo_client import MongoDriver
-import utils
 import _thread as thread
+import os
+import sys
+
+import PyQt5.QtCore as QtCore
+import PyQt5.QtGui as QtGui
+from PyQt5.QtWidgets import *
+
+import utils
+from mongo_client import MongoDriver
 
 
-class MainWindow(QtWidgets.QWidget):
+class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         print('start GUI')
@@ -24,19 +24,27 @@ class MainWindow(QtWidgets.QWidget):
         self.get_next_batch_data()
         data = self.data[self.index]
         self.setFixedSize(1600, 900)
+
+        self.font = QtGui.QFont('Microsoft YaHei', 12, 75)
+        self.text_box = QTextEdit()
+        self.text_box.setFont(self.font)
+        self.text_box.setObjectName("edit")
+        self.info_label = QLabel("Unsaved!")
+
         self.GUI()
         self.set_info(data)
+        QtCore.QMetaObject.connectSlotsByName(self)
 
-    def closeEvent(self,event):
+    def closeEvent(self, event):
         print('Closing...')
         for data in self.data:
-            if data['checked']==False:
-                doc={}
-                filter_={'_id':data['_id']}
-                update_={'$set':{'checking':False}}
-                doc['filter']=filter_
-                doc['update']=update_
-                self.driver.update_one('image',doc)
+            if not data['checked']:
+                doc = {}
+                filter_ = {'_id': data['_id']}
+                update_ = {'$set': {'checking': False}}
+                doc['filter'] = filter_
+                doc['update'] = update_
+                self.driver.update_one('image', doc)
         print('Done')
         event.accept()
 
@@ -46,10 +54,10 @@ class MainWindow(QtWidgets.QWidget):
         check_icon = QtGui.QIcon('./GUI_src/check.png')
         restore_icon = QtGui.QIcon('./GUI_src/restore.png')
 
-        self.prev_button = QtWidgets.QPushButton()
-        self.next_button = QtWidgets.QPushButton()
-        self.check_button = QtWidgets.QPushButton()
-        self.restore_button = QtWidgets.QPushButton()
+        self.prev_button = QPushButton()
+        self.next_button = QPushButton()
+        self.check_button = QPushButton()
+        self.restore_button = QPushButton()
 
         self.prev_button.setIcon(prev_icon)
         self.next_button.setIcon(next_icon)
@@ -62,33 +70,35 @@ class MainWindow(QtWidgets.QWidget):
         self.restore_button.clicked.connect(self.restore)
 
     def name_label(self):
-        self.name_label = QtWidgets.QLabel('UUID:')
-        self.uuid_label = QtWidgets.QLabel()
-        self.checked_label = QtWidgets.QLabel(str(self.checked))
+        self.name_label = QLabel('UUID:')
+        self.uuid_label = QLabel()
+        self.checked_label = QLabel(str(self.checked))
 
         self.name_label.setFont(self.font)
         self.uuid_label.setFont(self.font)
         self.checked_label.setFont(self.font)
 
     def image_box(self):
-        self.display_area = QtWidgets.QScrollArea()
-        self.image = QtWidgets.QLabel()
+        self.display_area = QScrollArea()
+        self.image = QLabel()
         self.display_area.setWidgetResizable(True)
         self.display_area.setWidget(self.image)
         self.display_area.resize(1200, 900)
 
+    @QtCore.pyqtSlot()
+    def on_edit_textChanged(self):
+        self.check_button.setDisabled(False)
+        self.info_label.setText("Unsaved!")
+
     def GUI(self):
-        self.font = QtGui.QFont('Microsoft YaHei', 12, 75)
         self.button()
         self.image_box()
         self.name_label()
-        self.text_box = QtWidgets.QTextEdit()
-        self.text_box.setFont(self.font)
 
-        name_box = QtWidgets.QHBoxLayout()
+        name_box = QHBoxLayout()
         name_box.addWidget(self.name_label)
         name_box.addWidget(self.uuid_label)
-        grid = QtWidgets.QGridLayout()
+        grid = QGridLayout()
         grid.addLayout(name_box, 0, 0, 2, 18, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
         grid.addWidget(self.checked_label, 0, 18, 2, 2, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
         grid.addWidget(self.prev_button, 2, 0, 8, 2, QtCore.Qt.AlignVCenter)
@@ -96,6 +106,7 @@ class MainWindow(QtWidgets.QWidget):
         grid.addWidget(self.next_button, 2, 18, 8, 2, QtCore.Qt.AlignVCenter)
         grid.addWidget(self.text_box, 10, 0, 8, 20)
         grid.addWidget(self.restore_button, 18, 0, 2, 2)
+        grid.addWidget(self.info_label, 18, 16, 2, 2)
         grid.addWidget(self.check_button, 18, 18, 2, 2)
         self.setLayout(grid)
 
@@ -120,12 +131,12 @@ class MainWindow(QtWidgets.QWidget):
 
     def set_info(self, data):
         self.uuid_label.setText(data['uuid'])
-        if os.path.exists(data['local_path']) == True:
+        if os.path.exists(data['local_path']):
             img_path = data['local_path']
         else:
             img_path = utils.image_transform(utils.url_img_download(data['src']))
         self.set_image(img_path)
-        if data['resolved'] == True:
+        if data['resolved']:
             self.text_box.setText(data['plain_text'])
         else:
             self.text_box.setText('')
@@ -150,16 +161,18 @@ class MainWindow(QtWidgets.QWidget):
             self.set_info(data)
 
     def check(self):
-        data=self.data[self.index]
-        data['plain_text']=self.text_box.toPlainText()
-        flag1= True if data['checked']==False else False
-        data['resolved']=True
-        data['checked']=True
-        data['checking']=False
-        flag2=self.driver.update_img_check_info(data)
-        if flag1==True and flag2==True:
-            self.checked=self.checked+1
+        data = self.data[self.index]
+        data['plain_text'] = self.text_box.toPlainText()
+        flag1 = True if data['checked'] == False else False
+        data['resolved'] = True
+        data['checked'] = True
+        data['checking'] = False
+        flag2 = self.driver.update_img_check_info(data)
+        if flag1 and flag2:
+            self.checked = self.checked + 1
             self.checked_label.setText(str(self.checked))
+        self.check_button.setDisabled(True)
+        self.info_label.setText("Saved!")
 
     def restore(self):
         data = self.data[self.index]
@@ -167,7 +180,7 @@ class MainWindow(QtWidgets.QWidget):
 
 
 if __name__ == '__main__':
-    app = QtWidgets.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     w = MainWindow()
     w.show()
 
