@@ -391,7 +391,7 @@ class Task(Thread):
             "Thread[%s] save %d questions to DB takes %.2fs" % (thread_name, len(question_list), end_time - start_time))
         if analysis_only:
             for analysis_data in question_list:
-                self.mongo_client.updata_analysis(analysis_data)
+                self.mongo_client.update_analysis(analysis_data)
             question_list.clear()
         else:
             if not self.mongo_client.insert_many(QUESTION_DETAILS, question_list):
@@ -698,8 +698,8 @@ class Task(Thread):
                 break
             for item in url_list:
                 if not item[RESOLVED]:  # False indicates current url has not been resolved yet
+                    question_url = item['url']
                     try:
-                        question_url = item['url']
                         resp = requests.get(url=question_url, headers=self.headers)
                         if resp.status_code != requests.codes.ok:
                             print("Resolved failed for url[%s] status_code[%d]" % (question_url, resp.status_code))
@@ -765,6 +765,7 @@ class Task(Thread):
                     except Exception as ex:  # 捕获所有异常，出错后单独处理，避免中断
                         print(ex)
                         print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item[ID], question_url))
+                        self.mongo_client.update_url_fake(item[ID])
                     if len(question_list) == QUESTION_BATCH_SIZE:
                         self.save_questions(self.name, img_list, question_list, start_time, time.time())
                         start_time = time.time()
@@ -774,6 +775,10 @@ class Task(Thread):
         print("Thread[%s] finished resolving [%d] questions taken %.2fs"
               % (self.name, count, time.time() - begin_time))
 
+    def mark_url_fake(self, url_id):
+        print("Question[id=%s] is fake" % url_id)
+        self.mongo_client.update_url_fake(url_id)
+
     def only_for_analysis(self, criteria):
         last = 0
         img_list = []
@@ -782,6 +787,7 @@ class Task(Thread):
         start_time = time.time()
         begin_time = start_time
         count = 0
+        criteria[FAKE] = False
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
             unfetched_data = self.mongo_client.find(QUESTION_DETAILS, BATCH_SIZE, offset, criteria)
@@ -844,6 +850,7 @@ class Task(Thread):
                 except Exception as ex:  # 捕获所有异常，出错后单独处理，避免中断
                     print(ex)
                     print("Thread[%s] resolve failed id=[%s] url=[%s]" % (self.name, item[ID], question_url))
+                    self.mark_url_fake(item[ID])
                 if len(question_list) == QUESTION_BATCH_SIZE:
                     self.save_questions(self.name, img_list, question_list, start_time, time.time(), True)
                     start_time = time.time()
