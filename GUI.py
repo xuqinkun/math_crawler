@@ -23,7 +23,7 @@ class MainWindow(QWidget):
 
         self.get_next_batch_data()
         data = self.data[self.index]
-        self.setFixedSize(1600, 900)
+        self.resize(1600, 900)
 
         self.font = QtGui.QFont('Microsoft YaHei', 12, 75)
         self.text_box = QTextEdit()
