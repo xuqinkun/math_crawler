@@ -67,6 +67,8 @@ class MainWindow(QWidget):
         self.save_button.setIcon(check_icon)
         self.restore_button.setIcon(restore_icon)
 
+        self.prev_button.resize(100,400)
+
         self.prev_button.clicked.connect(self.prev_page)
         self.next_button.clicked.connect(self.next_page)
         self.save_button.clicked.connect(self.save)
@@ -132,10 +134,10 @@ class MainWindow(QWidget):
         grid = QGridLayout()
         grid.addLayout(name_box, 0, 0, 2, 18, Qt.AlignHCenter | Qt.AlignVCenter)
         grid.addWidget(self.checked_label, 0, 18, 2, 2, Qt.AlignHCenter | Qt.AlignVCenter)
-        grid.addWidget(self.prev_button, 2, 0, 8, 2, Qt.AlignVCenter)
-        grid.addWidget(self.display_area, 2, 2, 8, 16)  # ,QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-        grid.addWidget(self.next_button, 2, 18, 8, 2, Qt.AlignVCenter)
-        grid.addWidget(self.text_box, 10, 0, 8, 20)
+        grid.addWidget(self.prev_button, 2, 0, 12, 2)#, Qt.AlignVCenter)
+        grid.addWidget(self.display_area, 2, 2, 12, 16)  # ,QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        grid.addWidget(self.next_button, 2, 18, 12, 2)#, Qt.AlignVCenter)
+        grid.addWidget(self.text_box, 14, 0, 4, 20)
         grid.addWidget(self.restore_button, 18, 0, 2, 2)
         self.save_info = QLabel()
         grid.addWidget(self.save_info, 18, 6, 2, 2)
