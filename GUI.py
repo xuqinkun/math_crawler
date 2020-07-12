@@ -1,4 +1,4 @@
-import _thread as thread
+from threading import Thread
 import os
 import sys
 
@@ -23,14 +23,16 @@ class MainWindow(QWidget):
 
         self.get_next_batch_data()
         data = self.data[self.index]
-        self.setFixedSize(1600, 900)
+        self.resize(1600, 900)
 
         self.font = QtGui.QFont('Microsoft YaHei', 12, 75)
         self.text_box = QTextEdit()
         self.text_box.setFont(self.font)
         self.text_box.setObjectName("edit")
         self.info_label = QLabel("Unsaved!")
-
+        self.auto_save = QCheckBox("Autosave")
+        self.auto_save.setObjectName("auto_save")
+        self.auto_save.setChecked(True)
         self.GUI()
         self.set_info(data)
         QtCore.QMetaObject.connectSlotsByName(self)
@@ -56,17 +58,17 @@ class MainWindow(QWidget):
 
         self.prev_button = QPushButton()
         self.next_button = QPushButton()
-        self.check_button = QPushButton()
+        self.save_button = QPushButton()
         self.restore_button = QPushButton()
 
         self.prev_button.setIcon(prev_icon)
         self.next_button.setIcon(next_icon)
-        self.check_button.setIcon(check_icon)
+        self.save_button.setIcon(check_icon)
         self.restore_button.setIcon(restore_icon)
 
         self.prev_button.clicked.connect(self.prev_page)
         self.next_button.clicked.connect(self.next_page)
-        self.check_button.clicked.connect(self.check)
+        self.save_button.clicked.connect(self.save)
         self.restore_button.clicked.connect(self.restore)
 
     def name_label(self):
@@ -87,8 +89,25 @@ class MainWindow(QWidget):
 
     @QtCore.pyqtSlot()
     def on_edit_textChanged(self):
-        self.check_button.setDisabled(False)
+        self.save_button.setDisabled(False)
         self.info_label.setText("Unsaved!")
+
+    # @QtCore.pyqtSlot()
+    # def on_auto_save_clicked(self):
+    #     print(self.auto_save.isChecked())
+
+    @QtCore.pyqtSlot()
+    def on_copy_button_clicked(self):
+        clipboard = QApplication.clipboard()
+        clipboard.setText(self.uuid_label.text())
+        self.copy_info.setText("Copied to clipboard!")
+
+    @QtCore.pyqtSlot()
+    def on_mark_button_clicked(self):
+        reply = QMessageBox.question(self, 'Warning', 'Mark this picture as GRAPH?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.text_box.setText("GRAPH")
 
     def GUI(self):
         self.button()
@@ -98,6 +117,17 @@ class MainWindow(QWidget):
         name_box = QHBoxLayout()
         name_box.addWidget(self.name_label)
         name_box.addWidget(self.uuid_label)
+        copy_button = QPushButton("Copy")
+        copy_button.setObjectName("copy_button")
+        self.copy_info = QLabel()
+
+        name_box.addWidget(copy_button)
+        name_box.addWidget(self.copy_info)
+        name_box.addWidget(self.info_label)
+
+        mark_button = QPushButton("GRAPH")
+        mark_button.setObjectName("mark_button")
+
         grid = QGridLayout()
         grid.addLayout(name_box, 0, 0, 2, 18, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
         grid.addWidget(self.checked_label, 0, 18, 2, 2, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
@@ -106,8 +136,11 @@ class MainWindow(QWidget):
         grid.addWidget(self.next_button, 2, 18, 8, 2, QtCore.Qt.AlignVCenter)
         grid.addWidget(self.text_box, 10, 0, 8, 20)
         grid.addWidget(self.restore_button, 18, 0, 2, 2)
-        grid.addWidget(self.info_label, 18, 16, 2, 2)
-        grid.addWidget(self.check_button, 18, 18, 2, 2)
+        self.save_info = QLabel()
+        grid.addWidget(self.save_info, 18, 6, 2, 2)
+        grid.addWidget(self.auto_save, 18, 14, 2, 2)
+        grid.addWidget(mark_button, 18, 16, 2, 2)
+        grid.addWidget(self.save_button, 18, 18, 2, 2)
         self.setLayout(grid)
 
     def set_image(self, path):
@@ -143,8 +176,9 @@ class MainWindow(QWidget):
 
     def prev_page(self):
         skip = False
+        auto_save_model = self.auto_save.isChecked()
         # Text is unsaved, pop a message box
-        if self.info_label.text().find("Unsave") != -1:
+        if not auto_save_model and self.info_label.text().find("Unsave") != -1:
             reply = QMessageBox.question(self, 'Warning', 'Unsaved!Are you sure to leave?',
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
@@ -152,14 +186,18 @@ class MainWindow(QWidget):
                 skip = True
         else:
             skip = True
+        if auto_save_model:
+            self.save()
         if skip and self.index > 0:
             self.index = self.index - 1
             data = self.data[self.index]
             self.set_info(data)
+            self.copy_info.setText("")
 
     def next_page(self):
         skip = False
-        if self.info_label.text().find("Unsave") != -1:
+        auto_save_model = self.auto_save.isChecked()
+        if not auto_save_model and self.info_label.text().find("Unsave") != -1:
             reply = QMessageBox.question(self, 'Warning', 'Unsaved!Are you sure to leave?',
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
@@ -168,20 +206,23 @@ class MainWindow(QWidget):
             skip = True
         if self.index + 6 >= self.size:
             try:
-                thread.start_new_thread(self.get_next_batch_data, ())
+                Thread(target=self.get_next_batch_data).start()
             except Exception as e:
                 print(e)
                 exit()
         print(self.size, self.index)
+        if auto_save_model:
+            self.save()
         if skip and self.index + 1 != self.size:
             self.index += 1
             data = self.data[self.index]
             self.set_info(data)
+            self.copy_info.setText("")
 
-    def check(self):
+    def save(self):
         data = self.data[self.index]
-        data['plain_text'] = self.text_box.toPlainText()
-        flag1 = True if data['checked'] == False else False
+        data['plain_text'] = self.text_box.toPlainText().strip()
+        flag1 = not data['checked']
         data['resolved'] = True
         data['checked'] = True
         data['checking'] = False
@@ -189,8 +230,9 @@ class MainWindow(QWidget):
         if flag1 and flag2:
             self.checked = self.checked + 1
             self.checked_label.setText(str(self.checked))
-        self.check_button.setDisabled(True)
+        self.save_button.setDisabled(True)
         self.info_label.setText("Saved!")
+        self.save_info.setText(data['uuid'] + ' saved!')
 
     def restore(self):
         data = self.data[self.index]

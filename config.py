@@ -36,6 +36,7 @@ OPTIONS = "options"
 TITLE = "title"
 SUBTITLE = "subtitle"
 
+FAKE = "fake"
 LOCAL_IMG_DIR = "./LocalImages/"
 # ------------------------------------OCR parameters-------------------------------------------
 # tencent

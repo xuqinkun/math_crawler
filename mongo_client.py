@@ -4,6 +4,7 @@ import utils
 from config import *
 
 
+
 def contains(pngs=[], target=[]):
     for png in pngs:
         try:
@@ -175,13 +176,19 @@ class MongoDriver:
                 print(e)
                 return False
 
-    def updata_analysis(self, analysis_data={}):
+    def update_analysis(self, analysis_data={}):
         with MongoClient(self.host, self.port) as client:
             db = client[DB]
             collection = db[QUESTION_DETAILS]
             question_id = analysis_data[ID]
             analysis_data.pop(ID)
             collection.update_one(filter={"id": question_id}, update={"$set": analysis_data})
+
+    def update_url_fake(self, url_id):
+        with MongoClient(self.host, self.port) as client:
+            db = client[DB]
+            collection = db[QUESTION_URL]
+            collection.update_one(filter={"id": url_id}, update={"$set": {FAKE: True}})
 
     def resolve_png_keys(self, docs):
         png_list = []
