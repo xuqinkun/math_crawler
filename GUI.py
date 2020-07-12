@@ -173,6 +173,7 @@ class MainWindow(QWidget):
             self.text_box.setText(data['plain_text'])
         else:
             self.text_box.setText('')
+        self.text_box.setFocus()
 
     def prev_page(self):
         skip = False
