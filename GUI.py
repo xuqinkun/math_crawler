@@ -2,7 +2,7 @@ from threading import Thread
 import os
 import sys
 
-import PyQt5.QtCore as QtCore
+from PyQt5.QtCore import Qt, QMetaObject, pyqtSlot
 import PyQt5.QtGui as QtGui
 from PyQt5.QtWidgets import *
 
@@ -29,13 +29,14 @@ class MainWindow(QWidget):
         self.text_box = QTextEdit()
         self.text_box.setFont(self.font)
         self.text_box.setObjectName("edit")
+
         self.info_label = QLabel("Unsaved!")
         self.auto_save = QCheckBox("Autosave")
         self.auto_save.setObjectName("auto_save")
         self.auto_save.setChecked(True)
         self.GUI()
         self.set_info(data)
-        QtCore.QMetaObject.connectSlotsByName(self)
+        QMetaObject.connectSlotsByName(self)
 
     def closeEvent(self, event):
         print('Closing...')
@@ -87,22 +88,22 @@ class MainWindow(QWidget):
         self.display_area.setWidget(self.image)
         self.display_area.resize(1200, 900)
 
-    @QtCore.pyqtSlot()
+    @pyqtSlot()
     def on_edit_textChanged(self):
         self.save_button.setDisabled(False)
         self.info_label.setText("Unsaved!")
 
-    # @QtCore.pyqtSlot()
-    # def on_auto_save_clicked(self):
-    #     print(self.auto_save.isChecked())
+    def keyPressEvent(self, event):
+        if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_S:
+            self.next_page()
 
-    @QtCore.pyqtSlot()
+    @pyqtSlot()
     def on_copy_button_clicked(self):
         clipboard = QApplication.clipboard()
         clipboard.setText(self.uuid_label.text())
         self.copy_info.setText("Copied to clipboard!")
 
-    @QtCore.pyqtSlot()
+    @pyqtSlot()
     def on_mark_button_clicked(self):
         reply = QMessageBox.question(self, 'Warning', 'Mark this picture as GRAPH?',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -129,11 +130,11 @@ class MainWindow(QWidget):
         mark_button.setObjectName("mark_button")
 
         grid = QGridLayout()
-        grid.addLayout(name_box, 0, 0, 2, 18, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
-        grid.addWidget(self.checked_label, 0, 18, 2, 2, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
-        grid.addWidget(self.prev_button, 2, 0, 8, 2, QtCore.Qt.AlignVCenter)
+        grid.addLayout(name_box, 0, 0, 2, 18, Qt.AlignHCenter | Qt.AlignVCenter)
+        grid.addWidget(self.checked_label, 0, 18, 2, 2, Qt.AlignHCenter | Qt.AlignVCenter)
+        grid.addWidget(self.prev_button, 2, 0, 8, 2, Qt.AlignVCenter)
         grid.addWidget(self.display_area, 2, 2, 8, 16)  # ,QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-        grid.addWidget(self.next_button, 2, 18, 8, 2, QtCore.Qt.AlignVCenter)
+        grid.addWidget(self.next_button, 2, 18, 8, 2, Qt.AlignVCenter)
         grid.addWidget(self.text_box, 10, 0, 8, 20)
         grid.addWidget(self.restore_button, 18, 0, 2, 2)
         self.save_info = QLabel()
@@ -173,6 +174,7 @@ class MainWindow(QWidget):
             self.text_box.setText(data['plain_text'])
         else:
             self.text_box.setText('')
+        self.text_box.setFocus()
 
     def prev_page(self):
         skip = False
