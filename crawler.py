@@ -2,6 +2,7 @@ import argparse
 
 from crawler_task import Task
 from mongo_client import MongoDriver
+from config import FAKE
 
 
 def str2bool(s):
@@ -91,4 +92,3 @@ if __name__ == '__main__':
                  False, batch_size, phantomjs_path, analysis_only, mongo_client)
         t.start()
         thread_id += 1
-
