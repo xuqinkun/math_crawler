@@ -47,6 +47,6 @@ Baidu_APP_ID = "20481895"
 Baidu_API_KEY = "jcqLdnhT3Ob4jflDqboKoG1z"
 Baidu_SECRET_KEY = "KAAcqOuXbtDPVgdH0NPXtGj6LZdPiO5i"
 # OCR batch_size
-OCR_BATCH_SIZE = 800
+OCR_BATCH_SIZE = 50
 
 CHECKED = "checked"

@@ -156,9 +156,13 @@ class MongoDriver:
             collection = db[COLLECTION_IMAGE]
             count = 0
             for uuid, text in img_text_list.items():
-                print(uuid,text)
+                # print(uuid,text)
                 if text != "":
-                    collection.update_one(filter={UUID: uuid}, update={"$set": {RESOLVED: True, PLAIN_TEXT: text}})
+                    if text in ['A','B','C','D']:
+                        print(uuid,text)
+                        collection.update_one(filter={UUID: uuid,CHECKED:False,CHECKING:False}, update={"$set": {RESOLVED: True, PLAIN_TEXT: text, CHECKED:True}})
+                    else:
+                        collection.update_one(filter={UUID: uuid,CHECKED:False,CHECKING:False}, update={"$set": {RESOLVED: True, PLAIN_TEXT: text}})
                     count = count + 1
             print("%d images text updated "% count)
         return True
@@ -225,7 +229,8 @@ class MongoDriver:
             png_dict = {}
             count = 0
             for doc in docs:
-                if not doc[RESOLVED]:
+                # print(doc)
+                if not doc[RESOLVED] and not doc[CHECKING] and not doc[CHECKED]:
                     png_dict[doc[UUID]] = doc["src"]
                     count += 1
                 if count >= batch_size:
