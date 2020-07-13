@@ -787,17 +787,15 @@ class Task(Thread):
         start_time = time.time()
         begin_time = start_time
         count = 0
-        criteria[FAKE] = False
         while count < self.max_size:
             offset = last + BATCH_SIZE * self.id
+            last += BATCH_SIZE * self.thread_nums
             unfetched_data = self.mongo_client.find(QUESTION_DETAILS, BATCH_SIZE, offset, criteria)
             id_list = [item['id'] for item in unfetched_data]
 
             url_list = self.mongo_client.find_url_by_ids(id_list)
             print("Thread[%s] start to fetch [%d] questions' analysis" % (self.name, BATCH_SIZE))
-            # url_list = db_client.load_url_by_id(['1997544'])
             count += len(url_list)
-            last += BATCH_SIZE * self.thread_nums
             if len(url_list) == 0:
                 break
             for item in url_list:

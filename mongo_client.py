@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from pymongo.errors import *
 import utils
 from config import *
-
+from math_resolve import *
 
 
 def contains(pngs=[], target=[]):
@@ -53,21 +53,20 @@ class MongoDriver:
             print(e)
             return False
 
-    def update_one(self,collection_name='',doc={}):
+    def update_one(self, collection_name='', doc={}):
         if len(doc) == 0:
             return True
         try:
             with MongoClient(self.host, self.port) as client:
                 db = client[DB]
                 collection = db[collection_name]
-                filter_=doc['filter']
-                update_=doc['update']
-                collection.update_one(filter=filter_,update=update_)
+                filter_ = doc['filter']
+                update_ = doc['update']
+                collection.update_one(filter=filter_, update=update_)
                 return True
         except Exception as e:
             print(e)
             return False
-
 
     # Load $num urls from the start item
     def find(self, collection_name='', num=0, start=0, criteria={}):
@@ -80,11 +79,22 @@ class MongoDriver:
                 data.append(doc)
             return data
 
+    def find_fake_url(self):
+
+        with MongoClient(self.host, self.port) as client:
+            db = client[DB]
+            collection = db[QUESTION_URL]
+            docs = collection.find({FAKE: True})
+            data = []
+            for doc in docs:
+                data.append(doc[ID])
+            return data
+
     def find_url_by_ids(self, ids=[]):
         with MongoClient(self.host, self.port) as client:
             db = client[DB]
             collection = db[QUESTION_URL]
-            docs = collection.find({ID: {"$in": ids}})
+            docs = collection.find({ID: {"$in": ids}, FAKE: False})
             data = []
             for doc in docs:
                 data.append(doc)
@@ -113,15 +123,15 @@ class MongoDriver:
                 data.append(doc)
             return data
 
-    def load_unchecked_img(self,num=10,start=0):
+    def load_unchecked_img(self, num=10, start=0):
         with MongoClient(self.host, self.port) as client:
-            db=client[DB]
-            collection=db[COLLECTION_IMAGE]
-            filter_={'checked':False,'checking':False}
-            update_={"$set":{"checking":True}}
-            data=[]
+            db = client[DB]
+            collection = db[COLLECTION_IMAGE]
+            filter_ = {'checked': False, 'checking': False}
+            update_ = {"$set": {"checking": True}}
+            data = []
             for i in range(num):
-                d=collection.find_one_and_update(filter=filter_,update=update_)
+                d = collection.find_one_and_update(filter=filter_, update=update_)
                 data.append(d)
             return data
 
@@ -131,7 +141,6 @@ class MongoDriver:
             collection = db[COOKIE]
             filter = {PHONE: cookies[PHONE]}
             collection.update(spec=filter, document=cookies, upsert=True)
-
 
     def load_cookies(self, phone_number=""):
         with MongoClient(self.host, self.port) as client:
@@ -164,17 +173,19 @@ class MongoDriver:
                     else:
                         collection.update_one(filter={UUID: uuid,CHECKED:False,CHECKING:False}, update={"$set": {RESOLVED: True, PLAIN_TEXT: text}})
                     count = count + 1
-            print("%d images text updated "% count)
+            print("%d images text updated " % count)
         return True
 
-    def update_img_check_info(self,data={}):
+    def update_img_check_info(self, data={}):
         with MongoClient(self.host, self.port) as client:
             db = client[DB]
             collection = db[COLLECTION_IMAGE]
-            filter_={'_id':data['_id']}
-            update={'$set':{'resolved':data['resolved'],'checked':data['checked'],'plain_text':data['plain_text'],'checking':data['checking']}}
+            filter_ = {'_id': data['_id']}
+            update = {
+                '$set': {'resolved': data['resolved'], 'checked': data['checked'], 'plain_text': data['plain_text'],
+                         'checking': data['checking']}}
             try:
-                collection.update_one(filter=filter_,update=update)
+                collection.update_one(filter=filter_, update=update)
                 return True
             except Exception as e:
                 print(e)
@@ -220,8 +231,7 @@ class MongoDriver:
                     png_list.append(doc["id"])
             return png_list
 
-
-    def load_img_src(self,batch_size = 100):
+    def load_img_src(self, batch_size=100):
         with MongoClient(self.host, self.port) as client:
             db = client[DB]
             collection = db[COLLECTION_IMAGE]
@@ -236,7 +246,6 @@ class MongoDriver:
                 if count >= batch_size:
                     break
             return png_dict
-
 
     # def get_unresolved_url_count():
     #     with MongoClient(MONGO_HOST, MONGO_PORT) as client:
@@ -309,8 +318,30 @@ class MongoDriver:
             ret = collection.delete_many({UUID: {"$in": uuid_list}})
             print(ret.deleted_count)
 
+    def get_question_analysis_fetched(self):
+        with MongoClient(self.host, self.port) as client:
+            db = client[DB]
+            collection = db[QUESTION_DETAILS]
+            docs = collection.find({"analysis_fetched": True})
+            ret = []
+            for doc in docs:
+                ret.append(doc)
+            return ret
+
+    def parse_doc(self, doc):
+        latex = []
+        if type(doc) is dict:
+            if MATH_ML in doc.keys():
+                latex.append(mathml2latex(doc[MATH_ML]))
+            else:
+                for key in doc.keys():
+                    latex += self.parse_doc(doc[key])
+        elif type(doc) is list:
+            for item in doc:
+                latex += self.parse_doc(item)
+        return latex
+
 
 if __name__ == '__main__':
-    client = MongoClient("localhost", 27017)
-    img_list1 = client.get_img_of_title()
-    img_list2 = client.get_img_of_options()
+    # client = MongoDriver("121.48.165.6", 11118)
+    client = MongoDriver("localhost", 27017)
